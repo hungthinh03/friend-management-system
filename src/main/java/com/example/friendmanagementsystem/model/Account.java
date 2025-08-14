@@ -12,7 +12,7 @@ import org.springframework.data.relational.core.mapping.Table;
 @Table("account")
 public class Account {
     @Id
-    private Integer id;
+    private Integer user_id;
     private String email;
 
 }
