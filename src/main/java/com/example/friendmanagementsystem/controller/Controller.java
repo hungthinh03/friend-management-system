@@ -1,6 +1,7 @@
 package com.example.friendmanagementsystem.controller;
 
 import com.example.friendmanagementsystem.dto.AccountDTO;
+import com.example.friendmanagementsystem.dto.ApiResponseDTO;
 import com.example.friendmanagementsystem.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,7 +18,7 @@ public class Controller {
 
     // Create
     @PostMapping
-    public Mono<AccountDTO> addFriend(@RequestBody AccountDTO dto) {
+    public Mono<ApiResponseDTO> addFriend(@RequestBody AccountDTO dto) {
         return service.addFriend(dto);
     }
 }

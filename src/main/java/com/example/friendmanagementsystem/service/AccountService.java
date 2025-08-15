@@ -1,8 +1,9 @@
 package com.example.friendmanagementsystem.service;
 
 import com.example.friendmanagementsystem.dto.AccountDTO;
+import com.example.friendmanagementsystem.dto.ApiResponseDTO;
 import reactor.core.publisher.Mono;
 
 public interface AccountService {
-    Mono<AccountDTO> addFriend(AccountDTO dto);
+    Mono<ApiResponseDTO> addFriend(AccountDTO dto);
 }
