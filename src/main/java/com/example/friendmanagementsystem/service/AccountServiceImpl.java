@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.util.Map;
 
 @Service
 public class AccountServiceImpl implements AccountService {
@@ -34,18 +33,23 @@ public class AccountServiceImpl implements AccountService {
                                     accountRepo.findByEmail(email2)
                                             .switchIfEmpty(Mono.error(new RuntimeException("User not found: " + email2)))
                             )
-                            .flatMap(tuple -> {
+                            .flatMap(tuple -> { //order (smaller_id, bigger_id)
                                 Integer id1 = Math.min(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
                                 Integer id2 = Math.max(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
 
-                                return friendRepo.save(new Friend(id1, id2))
-                                        .thenReturn(new ApiResponseDTO(true));
+                                return friendRepo.existsByUserId1AndUserId2(id1, id2)
+                                        .flatMap(exists -> exists
+                                                ? Mono.error(new IllegalStateException("Users are already friends")) //true
+                                                : friendRepo.save(new Friend(id1, id2))            //false
+                                                    .thenReturn(new ApiResponseDTO(true))
+                                        );
                             });
                 })
-                .onErrorResume(e -> {
-                    int code = e instanceof IllegalArgumentException ? 400 : 404;
-                    return Mono.just(new ApiResponseDTO(false, e.getMessage(), code));
-                });
+                .onErrorResume(e -> Mono.just(new ApiResponseDTO(
+                        false,
+                        e.getMessage(),
+                        e instanceof IllegalStateException ? 400 : 404
+                )));
     }
 
 }
