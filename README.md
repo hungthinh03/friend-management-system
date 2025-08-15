@@ -298,7 +298,7 @@ The system will use a relational database with the following core tables:
 - **Block** (blocking relationships)  
 
 **Database ER Diagram**  
-<img src="assets/db.png" style="width:50%;"/>
+<img src="assets/db.png" style="width:75%;"/>
 
 ---
 
