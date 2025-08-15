@@ -6,4 +6,10 @@ import reactor.core.publisher.Mono;
 
 public interface AccountService {
     Mono<ApiResponseDTO> addFriend(AccountDTO dto);
+
+    //
+    Mono<ApiResponseDTO> getFriends(AccountDTO dto);
+
+    //
+    Mono<ApiResponseDTO> removeFriend(AccountDTO dto);
 }

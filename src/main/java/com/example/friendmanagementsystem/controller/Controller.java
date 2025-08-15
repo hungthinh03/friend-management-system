@@ -4,10 +4,7 @@ import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
 import com.example.friendmanagementsystem.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @RestController
@@ -21,4 +18,18 @@ public class Controller {
     public Mono<ApiResponseDTO> addFriend(@RequestBody AccountDTO dto) {
         return service.addFriend(dto);
     }
+
+    // Read
+    @PostMapping("/friends")
+    public Mono<ApiResponseDTO> getFriends(@RequestBody AccountDTO dto) {
+        return service.getFriends(dto);
+    }
+
+
+    // Delete
+    @DeleteMapping
+    public Mono<ApiResponseDTO> unFriend(@RequestBody AccountDTO dto) {
+        return service.removeFriend(dto);
+    }
+
 }
