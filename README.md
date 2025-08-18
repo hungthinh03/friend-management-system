@@ -187,7 +187,7 @@ Project API features:
    - **API name**: block-updates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: If user B follows or is friends with user A, they are removed. They cannot follow or add each other if not already friends.
+      - **Note**: If user B follows or is friends with user A, they are removed. They cannot follow or add each other as friends.
    - **JSON request**:  
      ```json
      { 
@@ -275,7 +275,7 @@ Project API features:
 
 
 
-## 3. Milestones & Time Frames (4 Weeks)
+## 3. Milestones & Time Frames
 - **Time Frame**: 4 Weeks 
 - **Start date**: 14 August, 2025
 
