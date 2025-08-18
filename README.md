@@ -38,20 +38,22 @@ Project API features:
          "statusCode": 1002
      }
      ```
-     - **Users are already friends** - Returned when the two users are already friends:
-     ```json
-     { 
-         "status": "error",
-         "message": "Users are already friends",
-         "statusCode": 1003
-     }
-     ```
+
      - **Invalid request** - Returned when the request does not contain exactly 2 emails:
      ```json
      { 
          "status": "error",
          "message": "Invalid request",
          "statusCode": 1001
+     }
+     ```
+
+     - **Users are already friends** - Returned when the two users are already friends:
+     ```json
+     { 
+         "status": "error",
+         "message": "Users are already friends",
+         "statusCode": 1003
      }
      ```
 
@@ -172,6 +174,15 @@ Project API features:
      }
      ```
 
+     - **Already followed** - Returned when user A is already following user B:
+     ```json
+     { 
+         "status": "error",
+         "message": "User is already followed",
+         "statusCode": 1005
+     }
+     ```
+
 5. **Block updates from another email address.**  
    - **API name**: block-updates  
    - **Method**: POST  
@@ -207,6 +218,15 @@ Project API features:
          "status": "error",
          "message": "Invalid request",
          "statusCode": 1001
+     }
+     ```
+
+     - **Already blocked** - Returned when user A has already blocked user B:
+     ```json
+     { 
+         "status": "error",
+         "message": "User is already blocked",
+         "statusCode": 1007
      }
      ```
 
