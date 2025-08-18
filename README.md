@@ -81,7 +81,7 @@ Project API features:
      ```  
 
    - **Fail**:  
-     - **User not found** - Returned when one or both emails do not exist:
+     - **User not found** - Returned when email do not exist:
      ```json
      { 
          "status": "error",
@@ -187,7 +187,7 @@ Project API features:
    - **API name**: block-updates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: If user B and user B are friends, user A will no longer receive updates from user B. If they are not friends, they cannot add eachother as friends  
+      - **Note**: If user B follows or is friends with user A, they are removed. They cannot follow or add each other if not already friends.
    - **JSON request**:  
      ```json
      { 
@@ -255,7 +255,7 @@ Project API features:
      }
      ```  
    - **Fail**:  
-     - **User not found** - Returned when one or both emails do not exist:
+     - **User not found** - Returned when email do not exist:
      ```json
      { 
          "status": "error",
