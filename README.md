@@ -7,7 +7,7 @@ To design, develop, and deliver a RESTful API that enables management of friend 
 Project API features:
 
 1. **Create a friend connection between two email addresses**  
-   - **API name**: addFriend  
+   - **API name**: add-friend  
    - **Method**: POST  
    - **Description**: User A adds user B as a friend  
       - *Note: friends can see each other's updates*  
@@ -56,7 +56,7 @@ Project API features:
      ```
 
 2. **Retrieve the friends list for an email address.**  
-   - **API name**: getFriends  
+   - **API name**: get-friends  
    - **Method**: POST  
    - **Description**: User A gets list of all friends  
    - **JSON request**:  
@@ -89,7 +89,7 @@ Project API features:
      ```
 
 3. **Retrieve common friends list between two email addresses.**  
-   - **API name**: getCommonFriends  
+   - **API name**: get-common-friends  
    - **Method**: POST  
    - **Description**: User A gets list of mutual friends with user B  
    - **JSON request**:  
@@ -135,7 +135,7 @@ Project API features:
      ```
 
 4. **Subscribe to updates from another email address.**  
-   - **API name**: subscribeUpdates  
+   - **API name**: subscribe-updates  
    - **Method**: POST  
    - **Description**: User A follows user B for updates
       - *Note: Following does not add as friend*  
@@ -173,7 +173,7 @@ Project API features:
      ```
 
 5. **Block updates from another email address.**  
-   - **API name**: blockUpdates  
+   - **API name**: block-updates  
    - **Method**: POST  
    - **Description**: User A blocks user B
       - **Note**: If user B and user B are friends, user A will no longer receive updates from user B. If they are not friends, they cannot add eachother as friends  
@@ -211,7 +211,7 @@ Project API features:
      ```
 
 6. **Retrieve all update recipients for an email address.**  
-   - **API name**: getUpdateRecipients  
+   - **API name**: get-update-recipients  
    - **Method**: POST  
    - **Description**: User A gets list of recipients of user A's updates
       - **Note**: Recipents include user A's friends, followers and users @mentioned in the update **that has not blocked A** 
