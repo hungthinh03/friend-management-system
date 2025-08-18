@@ -221,7 +221,6 @@ The system will use a relational database with the following core tables:
 - **Block** (blocking relationships)  
 
 **Database ER Diagram**  
-<img src="assets/db.png" style="width:75%;"/>
 
 ## 5. Technical Specifications
 - **Architecture:** RESTful API.
