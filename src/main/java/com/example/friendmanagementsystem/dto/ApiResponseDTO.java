@@ -1,5 +1,6 @@
 package com.example.friendmanagementsystem.dto;
 
+import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
@@ -8,7 +9,9 @@ import java.util.List;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponseDTO {
-    private boolean success;
+    private Boolean success;
+    private String status;
+    private ErrorCode error;
     private String message;
     private Integer statusCode;
     private List<String> friends;
@@ -19,10 +22,10 @@ public class ApiResponseDTO {
         this.success = success;
     }
 
-    public ApiResponseDTO(boolean success, String message, Integer statusCode) {
-        this.success = success;
-        this.message = message;
-        this.statusCode = statusCode;
+    public ApiResponseDTO(ErrorCode errorCode) {
+        this.status = "error";
+        this.message = errorCode.getMessage();
+        this.statusCode = errorCode.getCode();
     }
 
     public ApiResponseDTO(boolean success, List<String> friends, Integer count) {

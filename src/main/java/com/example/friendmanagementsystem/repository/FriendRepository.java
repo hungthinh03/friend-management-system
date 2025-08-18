@@ -1,6 +1,8 @@
 package com.example.friendmanagementsystem.repository;
 
 import com.example.friendmanagementsystem.model.Friend;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
@@ -13,5 +15,9 @@ public interface FriendRepository extends ReactiveCrudRepository<Friend, Integer
 
     //SELECT * FROM friend WHERE user_id1 = :userId1 OR user_id2 = :userId2
     Flux<Friend> findAllByUserId1OrUserId2(Integer userId1, Integer userId2);
+
+    @Query("SELECT CASE WHEN f.userId1 = :userId THEN f.userId2 ELSE f.userId1 END " +
+            "FROM Friend f WHERE f.userId1 = :userId OR f.userId2 = :userId")
+    Flux<Integer> findAllFriendIdsByUserId(@Param("userId") Integer userId);
 
 }
