@@ -263,6 +263,15 @@ Project API features:
          "statusCode": 1002
      }
      ```
+     
+     - **Invalid request** - Returned when "text" field of request is empty/null:
+     ```json
+     { 
+         "status": "error",
+         "message": "Invalid request",
+         "statusCode": 1001
+     }
+     ```
 
 
 
