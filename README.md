@@ -6,11 +6,11 @@ To design, develop, and deliver a RESTful API that enables management of friend 
 ## 2. Scope of Work
 Project API features:
 
-1. **create a friend connection between two email addresses**  
+1. **Create a friend connection between two email addresses**  
    - **API name**: addFriend  
    - **Method**: POST  
    - **Description**: User A adds user B as a friend  
-      - *Note: friends can see each other updates*  
+      - *Note: friends can see each other's updates*  
    - **JSON request**:  
      ```json
      { 
@@ -29,11 +29,29 @@ Project API features:
      }
      ```  
    - **Fail**:  
+
+     - **User not found** - Returned when one or both emails do not exist:
      ```json
-     {
-         "success": false,
-         "message": error_message,
-         "statusCode": status_code
+     { 
+         "status": "error",
+         "message": "User not found",
+         "statusCode": 1002
+     }
+     ```
+     - **Users are already friends** - Returned when the two users are already friends:
+     ```json
+     { 
+         "status": "error",
+         "message": "Users are already friends",
+         "statusCode": 1003
+     }
+     ```
+     - **Invalid request** - Returned when the request does not contain exactly 2 emails:
+     ```json
+     { 
+         "status": "error",
+         "message": "Invalid request",
+         "statusCode": 1001
      }
      ```
 
@@ -59,12 +77,14 @@ Project API features:
          "count": 1 
      }
      ```  
+
    - **Fail**:  
+     - **User not found** - Returned when one or both emails do not exist:
      ```json
-     {
-         "success": false,
-         "message": error_message,
-         "statusCode": status_code
+     { 
+         "status": "error",
+         "message": "User not found",
+         "statusCode": 1002
      }
      ```
 
@@ -95,11 +115,22 @@ Project API features:
      }
      ```  
    - **Fail**:  
+
+     - **User not found** - Returned when one or both emails do not exist:
      ```json
-     {
-         "success": false,
-         "message": error_message,
-         "statusCode": status_code
+     { 
+         "status": "error",
+         "message": "User not found",
+         "statusCode": 1002
+     }
+     ```
+
+     - **Invalid request** - Returned when the request does not contain exactly 2 emails:
+     ```json
+     { 
+         "status": "error",
+         "message": "Invalid request",
+         "statusCode": 1001
      }
      ```
 
@@ -123,11 +154,21 @@ Project API features:
      }
      ```  
    - **Fail**:  
+     - **User not found** - Returned when one or both emails do not exist:
      ```json
-     {
-         "success": false,
-         "message": error_message,
-         "statusCode": status_code
+     { 
+         "status": "error",
+         "message": "User not found",
+         "statusCode": 1002
+     }
+     ```
+
+     - **Invalid request** - Returned when the request does not contain exactly 2 emails:
+     ```json
+     { 
+         "status": "error",
+         "message": "Invalid request",
+         "statusCode": 1001
      }
      ```
 
@@ -135,7 +176,7 @@ Project API features:
    - **API name**: blockUpdates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: If user A and user B are friends, user A will no longer receive updates from user B. If they are not friends, they cannot add eachother as friends  
+      - **Note**: If user B and user B are friends, user A will no longer receive updates from user B. If they are not friends, they cannot add eachother as friends  
    - **JSON request**:  
      ```json
      { 
@@ -151,11 +192,21 @@ Project API features:
      }
      ```  
    - **Fail**:  
+     - **User not found** - Returned when one or both emails do not exist:
      ```json
-     {
-         "success": false,
-         "message": error_message,
-         "statusCode": status_code
+     { 
+         "status": "error",
+         "message": "User not found",
+         "statusCode": 1002
+     }
+     ```
+
+     - **Invalid request** - Returned when the request does not contain exactly 2 emails:
+     ```json
+     { 
+         "status": "error",
+         "message": "Invalid request",
+         "statusCode": 1001
      }
      ```
 
@@ -184,11 +235,12 @@ Project API features:
      }
      ```  
    - **Fail**:  
+     - **User not found** - Returned when one or both emails do not exist:
      ```json
-     {
-         "success": false,
-         "message": error_message,
-         "statusCode": status_code
+     { 
+         "status": "error",
+         "message": "User not found",
+         "statusCode": 1002
      }
      ```
 
