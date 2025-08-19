@@ -25,6 +25,11 @@ public class Controller {
         return service.getFriends(dto);
     }
 
+    @PostMapping("/friend/mutual")
+    public Mono<ApiResponseDTO> getMutualFriends(@RequestBody AccountDTO dto) {
+        return service.getCommonFriends(dto);
+    }
+
 
     // Delete
     @DeleteMapping

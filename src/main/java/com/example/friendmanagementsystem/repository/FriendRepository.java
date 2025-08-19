@@ -16,8 +16,10 @@ public interface FriendRepository extends ReactiveCrudRepository<Friend, Integer
     //SELECT * FROM friend WHERE user_id1 = :userId1 OR user_id2 = :userId2
     Flux<Friend> findAllByUserId1OrUserId2(Integer userId1, Integer userId2);
 
-    @Query("SELECT CASE WHEN f.userId1 = :userId THEN f.userId2 ELSE f.userId1 END " +
-            "FROM Friend f WHERE f.userId1 = :userId OR f.userId2 = :userId")
+    @Query("""
+    SELECT user_id2 FROM Friend WHERE user_id1 = :userId
+    UNION
+    SELECT user_id1 FROM Friend WHERE user_id2 = :userId
+""")
     Flux<Integer> findAllFriendIdsByUserId(@Param("userId") Integer userId);
-
 }

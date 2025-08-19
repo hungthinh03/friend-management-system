@@ -10,7 +10,7 @@ public interface AccountService {
     //
     Mono<ApiResponseDTO> getFriends(AccountDTO dto);
     //
-    //Mono<ApiResponseDTO> getCommonFriends(AccountDTO dto);
+    Mono<ApiResponseDTO> getCommonFriends(AccountDTO dto);
 
     //
     Mono<ApiResponseDTO> removeFriend(AccountDTO dto);
