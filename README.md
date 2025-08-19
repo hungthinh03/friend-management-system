@@ -48,6 +48,15 @@ Project API features:
      }
      ```
 
+     - **Emails must be different** - Returned when the request contain 2 of the same email:
+     ```json
+     { 
+         "status": "error",
+         "message": "Emails must be different",
+         "statusCode": 1009
+     }
+     ```
+
      - **Users are already friends** - Returned when the two users are already friends:
      ```json
      { 
@@ -135,6 +144,16 @@ Project API features:
          "statusCode": 1001
      }
      ```
+     
+     - **Emails must be different** - Returned when the request contain 2 of the same email:
+     ```json
+     { 
+         "status": "error",
+         "message": "Emails must be different",
+         "statusCode": 1009
+     }
+     ```
+
 
 4. **Subscribe to updates from another email address.**  
    - **API name**: /subscribeUpdates  
@@ -171,6 +190,15 @@ Project API features:
          "status": "error",
          "message": "Invalid request",
          "statusCode": 1001
+     }
+     ```
+
+     - **Emails must be different** - Returned when the request contain 2 of the same email:
+     ```json
+     { 
+         "status": "error",
+         "message": "Emails must be different",
+         "statusCode": 1009
      }
      ```
 
@@ -218,6 +246,15 @@ Project API features:
          "status": "error",
          "message": "Invalid request",
          "statusCode": 1001
+     }
+     ```
+
+     - **Emails must be different** - Returned when the request contain 2 of the same email:
+     ```json
+     { 
+         "status": "error",
+         "message": "Emails must be different",
+         "statusCode": 1009
      }
      ```
 
