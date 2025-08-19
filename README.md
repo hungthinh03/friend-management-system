@@ -7,7 +7,7 @@ To design, develop, and deliver a RESTful API that enables management of friend 
 Project API features:
 
 1. **Create a friend connection between two email addresses**  
-   - **API name**: add-friend  
+   - **API name**: /addFriend  
    - **Method**: POST  
    - **Description**: User A adds user B as a friend  
       - *Note: friends can see each other's updates*  
@@ -58,7 +58,7 @@ Project API features:
      ```
 
 2. **Retrieve the friends list for an email address.**  
-   - **API name**: get-friends  
+   - **API name**: /getFriends  
    - **Method**: POST  
    - **Description**: User A gets list of all friends  
    - **JSON request**:  
@@ -91,7 +91,7 @@ Project API features:
      ```
 
 3. **Retrieve common friends list between two email addresses.**  
-   - **API name**: get-common-friends  
+   - **API name**: /getCommonFriends  
    - **Method**: POST  
    - **Description**: User A gets list of mutual friends with user B  
    - **JSON request**:  
@@ -137,7 +137,7 @@ Project API features:
      ```
 
 4. **Subscribe to updates from another email address.**  
-   - **API name**: subscribe-updates  
+   - **API name**: /subscribeUpdates  
    - **Method**: POST  
    - **Description**: User A follows user B for updates
       - *Note: Following does not add as friend*  
@@ -184,7 +184,7 @@ Project API features:
      ```
 
 5. **Block updates from another email address.**  
-   - **API name**: block-updates  
+   - **API name**: /blockUpdates  
    - **Method**: POST  
    - **Description**: User A blocks user B
       - **Note**: If user B follows or is friends with user A, they are removed. They cannot follow or add each other as friends.
@@ -231,7 +231,7 @@ Project API features:
      ```
 
 6. **Retrieve all update recipients for an email address.**  
-   - **API name**: get-update-recipients  
+   - **API name**: /getUpdateRecipients  
    - **Method**: POST  
    - **Description**: User A gets list of recipients of user A's updates
       - **Note**: Recipents include user A's friends, followers and users @mentioned in the update **that has not blocked A** 
