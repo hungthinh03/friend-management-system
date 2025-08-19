@@ -6,7 +6,7 @@ To design, develop, and deliver a RESTful API that enables management of friend 
 ## 2. Scope of Work
 Project API features:
 
-1. **Create a friend connection between two email addresses**  
+1. **Create a friend connection between two email addresses.**  
    - **API name**: /addFriend  
    - **Method**: POST  
    - **Description**: User A adds user B as a friend  
@@ -187,7 +187,7 @@ Project API features:
    - **API name**: /blockUpdates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: If user B follows or is friends with user A, they are removed. They cannot follow or add each other as friends.
+      - **Note**: If user B follows user A, they are removed. They cannot follow or add each other as friends.
    - **JSON request**:  
      ```json
      { 
