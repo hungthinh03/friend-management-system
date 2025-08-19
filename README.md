@@ -6,8 +6,8 @@ To design, develop, and deliver a RESTful API that enables management of friend 
 ## 2. Scope of Work
 Project API features:
 
-1. **Create a friend connection between two email addresses**  
-   - **API name**: add-friend  
+1. **Create a friend connection between two email addresses.**  
+   - **API name**: /addFriend  
    - **Method**: POST  
    - **Description**: User A adds user B as a friend  
       - *Note: friends can see each other's updates*  
@@ -38,14 +38,7 @@ Project API features:
          "statusCode": 1002
      }
      ```
-     - **Users are already friends** - Returned when the two users are already friends:
-     ```json
-     { 
-         "status": "error",
-         "message": "Users are already friends",
-         "statusCode": 1003
-     }
-     ```
+
      - **Invalid request** - Returned when the request does not contain exactly 2 emails:
      ```json
      { 
@@ -55,8 +48,17 @@ Project API features:
      }
      ```
 
+     - **Users are already friends** - Returned when the two users are already friends:
+     ```json
+     { 
+         "status": "error",
+         "message": "Users are already friends",
+         "statusCode": 1003
+     }
+     ```
+
 2. **Retrieve the friends list for an email address.**  
-   - **API name**: get-friends  
+   - **API name**: /getFriends  
    - **Method**: POST  
    - **Description**: User A gets list of all friends  
    - **JSON request**:  
@@ -79,7 +81,7 @@ Project API features:
      ```  
 
    - **Fail**:  
-     - **User not found** - Returned when one or both emails do not exist:
+     - **User not found** - Returned when email do not exist:
      ```json
      { 
          "status": "error",
@@ -89,7 +91,7 @@ Project API features:
      ```
 
 3. **Retrieve common friends list between two email addresses.**  
-   - **API name**: get-common-friends  
+   - **API name**: /getCommonFriends  
    - **Method**: POST  
    - **Description**: User A gets list of mutual friends with user B  
    - **JSON request**:  
@@ -135,7 +137,7 @@ Project API features:
      ```
 
 4. **Subscribe to updates from another email address.**  
-   - **API name**: subscribe-updates  
+   - **API name**: /subscribeUpdates  
    - **Method**: POST  
    - **Description**: User A follows user B for updates
       - *Note: Following does not add as friend*  
@@ -172,11 +174,20 @@ Project API features:
      }
      ```
 
+     - **Already followed** - Returned when user A is already following user B:
+     ```json
+     { 
+         "status": "error",
+         "message": "User is already followed",
+         "statusCode": 1005
+     }
+     ```
+
 5. **Block updates from another email address.**  
-   - **API name**: block-updates  
+   - **API name**: /blockUpdates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: If user B and user B are friends, user A will no longer receive updates from user B. If they are not friends, they cannot add eachother as friends  
+      - **Note**: If user B follows user A, they are removed. They cannot follow or add each other as friends.
    - **JSON request**:  
      ```json
      { 
@@ -210,8 +221,17 @@ Project API features:
      }
      ```
 
+     - **Already blocked** - Returned when user A has already blocked user B:
+     ```json
+     { 
+         "status": "error",
+         "message": "User is already blocked",
+         "statusCode": 1007
+     }
+     ```
+
 6. **Retrieve all update recipients for an email address.**  
-   - **API name**: get-update-recipients  
+   - **API name**: /getUpdateRecipients  
    - **Method**: POST  
    - **Description**: User A gets list of recipients of user A's updates
       - **Note**: Recipents include user A's friends, followers and users @mentioned in the update **that has not blocked A** 
@@ -235,7 +255,7 @@ Project API features:
      }
      ```  
    - **Fail**:  
-     - **User not found** - Returned when one or both emails do not exist:
+     - **User not found** - Returned when email do not exist:
      ```json
      { 
          "status": "error",
@@ -243,10 +263,19 @@ Project API features:
          "statusCode": 1002
      }
      ```
+     
+     - **Invalid request** - Returned when "text" field of request is empty/null:
+     ```json
+     { 
+         "status": "error",
+         "message": "Invalid request",
+         "statusCode": 1001
+     }
+     ```
 
 
 
-## 3. Milestones & Time Frames (4 Weeks)
+## 3. Milestones & Time Frames
 - **Time Frame**: 4 Weeks 
 - **Start date**: 14 August, 2025
 
