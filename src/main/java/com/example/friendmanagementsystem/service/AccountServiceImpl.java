@@ -4,9 +4,12 @@ import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.example.friendmanagementsystem.common.exception.AppException;
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
+import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import com.example.friendmanagementsystem.model.Account;
+import com.example.friendmanagementsystem.model.Follower;
 import com.example.friendmanagementsystem.model.Friend;
 import com.example.friendmanagementsystem.repository.AccountRepository;
+import com.example.friendmanagementsystem.repository.FollowerRepository;
 import com.example.friendmanagementsystem.repository.FriendRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,7 +25,13 @@ public class AccountServiceImpl implements AccountService {
     private AccountRepository accountRepo;
     @Autowired
     private FriendRepository friendRepo;
+    @Autowired
+    private FollowerRepository followerRepo;
 
+    @Override
+    public Mono<List<String>> getAllEmails() {
+        return accountRepo.findAllEmails().collectList();
+    }
 
     @Override
     public Mono<ApiResponseDTO> addFriend(AccountDTO dto) {
@@ -128,6 +137,60 @@ public class AccountServiceImpl implements AccountService {
                             .map(list -> new ApiResponseDTO(true, list, list.size()));
                 })
                 .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
+    }
+
+    @Override
+    public Mono<ApiResponseDTO> subscribeUpdates(UserConnectionDTO dto) {
+        return Mono.just(dto)
+                .filter(d -> !d.getRequestor().equalsIgnoreCase(d.getTarget()))
+                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
+                .flatMap(d -> Mono.zip(
+                        accountRepo.findByEmail(d.getRequestor())
+                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
+                        accountRepo.findByEmail(d.getTarget())
+                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+                ))
+                .flatMap(tuple -> {
+                    Integer followerId = tuple.getT1().getUser_id();
+                    Integer followeeId = tuple.getT2().getUser_id();
+
+                    return followerRepo.existsByFollowerIdAndFolloweeId(followerId, followeeId)
+                            .flatMap(exists -> exists
+                                    ? Mono.error(new AppException(ErrorCode.ALREADY_FOLLOWED))
+                                    : followerRepo.save(new Follower(followerId, followeeId))
+                                    .thenReturn(new ApiResponseDTO(true))
+                            );
+                })
+                .onErrorResume(AppException.class, e ->
+                        Mono.just(new ApiResponseDTO(e.getErrorCode()))
+                );
+    }
+
+    @Override
+    public Mono<ApiResponseDTO> unsubscribeUpdates(UserConnectionDTO dto) {
+        return Mono.just(dto)
+                .filter(d -> !d.getRequestor().equalsIgnoreCase(d.getTarget()))
+                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
+                .flatMap(d -> Mono.zip(
+                        accountRepo.findByEmail(d.getRequestor())
+                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
+                        accountRepo.findByEmail(d.getTarget())
+                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+                ))
+                .flatMap(tuple -> {
+                    Integer followerId = tuple.getT1().getUser_id();
+                    Integer followeeId = tuple.getT2().getUser_id();
+
+                    return followerRepo.existsByFollowerIdAndFolloweeId(followerId, followeeId)
+                            .flatMap(exists -> exists
+                                    ? followerRepo.deleteByFollowerIdAndFolloweeId(followerId, followeeId)
+                                    .thenReturn(new ApiResponseDTO(true))
+                                    : Mono.error(new AppException(ErrorCode.NOT_FOLLOWED))
+                            );
+                })
+                .onErrorResume(AppException.class, e ->
+                        Mono.just(new ApiResponseDTO(e.getErrorCode()))
+                );
     }
 
 }
