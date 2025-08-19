@@ -341,6 +341,8 @@ The system will use a relational database with the following core tables:
 **Database ER Diagram**  
 <img src="assets/db.png" style="width:75%;"/>
 
+SQL Script to recreate the database: [schema.sql](./sql/frienddb.sql)
+
 ## 5. Technical Specifications
 - **Architecture:** RESTful API.
 - **Data Format:** JSON for all requests and responses.
