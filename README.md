@@ -215,7 +215,7 @@ Project API features:
    - **API name**: /blockUpdates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: If user B follows user A, they are removed. They cannot follow or add each other as friends.
+      - **Note**: If user B follows user A, they are removed. They cannot follow or add each other as friends if not already friends.
    - **JSON request**:  
      ```json
      { 
