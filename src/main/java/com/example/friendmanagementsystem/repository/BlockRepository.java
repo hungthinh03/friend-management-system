@@ -1,5 +1,6 @@
 package com.example.friendmanagementsystem.repository;
 
+import com.example.friendmanagementsystem.model.Block;
 import com.example.friendmanagementsystem.model.Follower;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
@@ -7,9 +8,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Repository
-public interface FollowerRepository extends ReactiveCrudRepository<Follower, Integer> {
+public interface BlockRepository extends ReactiveCrudRepository<Block, Integer> {
+    Mono<Boolean> existsByBlockerIdAndBlockedId(Integer blockerId, Integer blockedId);
 
-    Mono<Boolean> existsByFollowerIdAndFolloweeId(Integer followerId, Integer followeeId);
-
-    Mono<Void>  deleteByFollowerIdAndFolloweeId(Integer followerId, Integer followeeId);
+    Mono<Void>deleteByBlockerIdAndBlockedId(Integer blockerId, Integer blockedId);
 }

@@ -17,10 +17,10 @@ public interface AccountService {
     Mono<ApiResponseDTO> getFriends(AccountDTO dto);
     //
     Mono<ApiResponseDTO> getCommonFriends(AccountDTO dto);
-
     //
     Mono<ApiResponseDTO> subscribeUpdates(UserConnectionDTO dto);
     Mono<ApiResponseDTO> unsubscribeUpdates(UserConnectionDTO dto);
     //
-
+    Mono<ApiResponseDTO> blockUpdates(UserConnectionDTO dto);
+    Mono<ApiResponseDTO> unblockUpdates(UserConnectionDTO dto);
 }

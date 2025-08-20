@@ -53,7 +53,15 @@ public class Controller {
         return service.unsubscribeUpdates(dto);
     }
 
-
+    // Block
+    @PostMapping("/block")
+    public Mono<ApiResponseDTO> blockUpdates(@RequestBody UserConnectionDTO dto) {
+        return service.blockUpdates(dto);
+    }
+    @DeleteMapping("/block")
+    public Mono<ApiResponseDTO> unblockUpdates(@RequestBody UserConnectionDTO dto) {
+        return service.unblockUpdates(dto);
+    }
 
 
 }

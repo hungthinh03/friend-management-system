@@ -15,6 +15,7 @@ public enum ErrorCode {
     ALREADY_BLOCKED(1007, "User is already blocked"),
     NOT_BLOCKED(1008, "User is not blocked"),
     SAME_EMAILS(1009, "Emails must be different"),
+    USER_CONNECTION_BLOCKED(1010,"You or this user has blocked the other"),
     UNEXPECTED_ERROR(1999, "Unexpected error");
 
     private final int code;

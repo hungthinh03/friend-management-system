@@ -6,14 +6,17 @@ import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
 import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import com.example.friendmanagementsystem.model.Account;
+import com.example.friendmanagementsystem.model.Block;
 import com.example.friendmanagementsystem.model.Follower;
 import com.example.friendmanagementsystem.model.Friend;
 import com.example.friendmanagementsystem.repository.AccountRepository;
+import com.example.friendmanagementsystem.repository.BlockRepository;
 import com.example.friendmanagementsystem.repository.FollowerRepository;
 import com.example.friendmanagementsystem.repository.FriendRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,6 +30,9 @@ public class AccountServiceImpl implements AccountService {
     private FriendRepository friendRepo;
     @Autowired
     private FollowerRepository followerRepo;
+    @Autowired
+    private BlockRepository blockRepo;
+
 
     @Override
     public Mono<List<String>> getAllEmails() {
@@ -139,26 +145,40 @@ public class AccountServiceImpl implements AccountService {
                 .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
     }
 
+    // Helper UserConnectionDTO
+    private Mono<Tuple2<Account, Account>> validateAndFetchAccounts(String email1, String email2) {
+        if (email1.equalsIgnoreCase(email2)) {
+            return Mono.error(new AppException(ErrorCode.SAME_EMAILS));
+        }
+        return Mono.zip(
+                accountRepo.findByEmail(email1)
+                        .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
+                accountRepo.findByEmail(email2)
+                        .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+        );
+    }
+
     @Override
     public Mono<ApiResponseDTO> subscribeUpdates(UserConnectionDTO dto) {
-        return Mono.just(dto)
-                .filter(d -> !d.getRequestor().equalsIgnoreCase(d.getTarget()))
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
-                .flatMap(d -> Mono.zip(
-                        accountRepo.findByEmail(d.getRequestor())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
-                        accountRepo.findByEmail(d.getTarget())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-                ))
+        return validateAndFetchAccounts(dto.getRequestor(), dto.getTarget())
                 .flatMap(tuple -> {
                     Integer followerId = tuple.getT1().getUser_id();
                     Integer followeeId = tuple.getT2().getUser_id();
 
-                    return followerRepo.existsByFollowerIdAndFolloweeId(followerId, followeeId)
-                            .flatMap(exists -> exists
-                                    ? Mono.error(new AppException(ErrorCode.ALREADY_FOLLOWED))
-                                    : followerRepo.save(new Follower(followerId, followeeId))
-                                    .thenReturn(new ApiResponseDTO(true))
+                    return Mono.zip( // Check if any block exist
+                                    blockRepo.existsByBlockerIdAndBlockedId(followerId, followeeId),
+                                    blockRepo.existsByBlockerIdAndBlockedId(followeeId, followerId)
+                            )
+                            .map(blocks -> blocks.getT1() || blocks.getT2())
+                            .filter(blockExists -> !blockExists)  // blockExists = true if either block exists
+                            .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_CONNECTION_BLOCKED)))
+                            .then(
+                                    followerRepo.existsByFollowerIdAndFolloweeId(followerId, followeeId)
+                                            .flatMap(exists -> exists
+                                                    ? Mono.error(new AppException(ErrorCode.ALREADY_FOLLOWED))
+                                                    : followerRepo.save(new Follower(followerId, followeeId))
+                                                    .thenReturn(new ApiResponseDTO(true))
+                                            )
                             );
                 })
                 .onErrorResume(AppException.class, e ->
@@ -193,5 +213,65 @@ public class AccountServiceImpl implements AccountService {
                 );
     }
 
+
+    @Override
+    public Mono<ApiResponseDTO> blockUpdates(UserConnectionDTO dto) {
+        return Mono.just(dto)
+                .filter(d -> !d.getRequestor().equalsIgnoreCase(d.getTarget()))
+                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
+                .flatMap(d -> Mono.zip(
+                        accountRepo.findByEmail(d.getRequestor())
+                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
+                        accountRepo.findByEmail(d.getTarget())
+                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+                ))
+                .flatMap(tuple -> {
+                    Integer blockerId = tuple.getT1().getUser_id();
+                    Integer blockedId = tuple.getT2().getUser_id();
+
+                    return blockRepo.existsByBlockerIdAndBlockedId(blockerId, blockedId)
+                            .flatMap(exists -> exists
+                                    ? Mono.error(new AppException(ErrorCode.ALREADY_BLOCKED))
+                                    : blockRepo.save(new Block(blockerId, blockedId))
+                                    .then(
+                                            Mono.when(  // remove follow both ways
+                                                    followerRepo.deleteByFollowerIdAndFolloweeId(blockerId, blockedId),
+                                                    followerRepo.deleteByFollowerIdAndFolloweeId(blockedId, blockerId)
+                                            )
+                                    )
+                                    .thenReturn(new ApiResponseDTO(true))
+                            );
+                })
+                .onErrorResume(AppException.class, e ->
+                        Mono.just(new ApiResponseDTO(e.getErrorCode()))
+                );
+    }
+
+    @Override
+    public Mono<ApiResponseDTO> unblockUpdates(UserConnectionDTO dto) {
+        return Mono.just(dto)
+                .filter(d -> !d.getRequestor().equalsIgnoreCase(d.getTarget()))
+                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
+                .flatMap(d -> Mono.zip(
+                        accountRepo.findByEmail(d.getRequestor())
+                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
+                        accountRepo.findByEmail(d.getTarget())
+                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+                ))
+                .flatMap(tuple -> {
+                    Integer blockerId = tuple.getT1().getUser_id();
+                    Integer blockedId = tuple.getT2().getUser_id();
+
+                    return blockRepo.existsByBlockerIdAndBlockedId(blockerId, blockedId)
+                            .flatMap(exists -> exists
+                                    ? blockRepo.deleteByBlockerIdAndBlockedId(blockerId, blockedId)
+                                    .thenReturn(new ApiResponseDTO(true))
+                                    : Mono.error(new AppException(ErrorCode.NOT_BLOCKED))
+                            );
+                })
+                .onErrorResume(AppException.class, e ->
+                        Mono.just(new ApiResponseDTO(e.getErrorCode()))
+                );
+    }
 }
 
