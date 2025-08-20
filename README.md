@@ -10,7 +10,7 @@ Project API features:
    - **API name**: /addFriend  
    - **Method**: POST  
    - **Description**: User A adds user B as a friend  
-      - *Note: friends can see each other's updates*  
+      - **Note**: friends can see each other's updates  
    - **JSON request**:  
      ```json
      { 
@@ -159,7 +159,7 @@ Project API features:
    - **API name**: /subscribeUpdates  
    - **Method**: POST  
    - **Description**: User A follows user B for updates
-      - *Note: Following does not add as friend*  
+      - **Note**: Following does not add as friend  
    - **JSON request**:  
      ```json
      { 
@@ -215,7 +215,7 @@ Project API features:
    - **API name**: /blockUpdates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: If user B follows user A, they are removed. They cannot follow or add each other as friends.
+      - **Note**: Any follows between user A and user B are removed. They cannot follow or add each other as friends if not already
    - **JSON request**:  
      ```json
      { 
@@ -340,6 +340,8 @@ The system will use a relational database with the following core tables:
 
 **Database ER Diagram**  
 <img src="assets/db.png" style="width:75%;"/>
+
+SQL Script to recreate the database: [frienddb.sql](./sql/frienddb.sql)
 
 ## 5. Technical Specifications
 - **Architecture:** RESTful API.
