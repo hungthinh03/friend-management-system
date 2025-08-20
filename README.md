@@ -10,7 +10,7 @@ Project API features:
    - **API name**: /addFriend  
    - **Method**: POST  
    - **Description**: User A adds user B as a friend  
-      - *Note: friends can see each other's updates*  
+      - **Note**: friends can see each other's updates  
    - **JSON request**:  
      ```json
      { 
@@ -159,7 +159,7 @@ Project API features:
    - **API name**: /subscribeUpdates  
    - **Method**: POST  
    - **Description**: User A follows user B for updates
-      - *Note: Following does not add as friend*  
+      - **Note**: Following does not add as friend  
    - **JSON request**:  
      ```json
      { 
@@ -215,7 +215,7 @@ Project API features:
    - **API name**: /blockUpdates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: If user B follows user A, they are removed. They cannot follow or add each other as friends if not already friends.
+      - **Note**: Any follows between user A and user B are removed. They cannot follow or add each other as friends if not already
    - **JSON request**:  
      ```json
      { 
