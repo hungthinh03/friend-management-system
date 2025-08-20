@@ -2,6 +2,7 @@ package com.example.friendmanagementsystem.controller;
 
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
+import com.example.friendmanagementsystem.dto.PostDTO;
 import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import com.example.friendmanagementsystem.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,5 +64,10 @@ public class Controller {
         return service.unblockUpdates(dto);
     }
 
+    // Post
+    @PostMapping("/post")
+    public Mono<ApiResponseDTO> getUpdateRecipients(@RequestBody PostDTO dto) {
+        return service.getUpdateRecipients(dto);
+    }
 
 }

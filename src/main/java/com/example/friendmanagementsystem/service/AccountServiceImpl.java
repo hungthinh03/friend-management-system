@@ -4,6 +4,7 @@ import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.example.friendmanagementsystem.common.exception.AppException;
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
+import com.example.friendmanagementsystem.dto.PostDTO;
 import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import com.example.friendmanagementsystem.model.Account;
 import com.example.friendmanagementsystem.model.Block;
@@ -15,6 +16,7 @@ import com.example.friendmanagementsystem.repository.FollowerRepository;
 import com.example.friendmanagementsystem.repository.FriendRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
@@ -69,8 +71,8 @@ public class AccountServiceImpl implements AccountService {
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
                 .flatMap(list -> validateAndFetchAccounts(list.getFirst(), list.get(1))) // Helper
                 .flatMap(tuple -> { // order (smaller_id, bigger_id)
-                    Integer id1 = Math.min(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
-                    Integer id2 = Math.max(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
+                    Integer id1 = Math.min(tuple.getT1().getUserId(), tuple.getT2().getUserId());
+                    Integer id2 = Math.max(tuple.getT1().getUserId(), tuple.getT2().getUserId());
 
                     return validateNotBlocked(id1, id2) // if not block -> proceed
                             .then(
@@ -94,8 +96,8 @@ public class AccountServiceImpl implements AccountService {
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
                 .flatMap(list -> validateAndFetchAccounts(list.getFirst(), list.get(1)))
                 .flatMap(tuple -> {
-                    Integer id1 = Math.min(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
-                    Integer id2 = Math.max(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
+                    Integer id1 = Math.min(tuple.getT1().getUserId(), tuple.getT2().getUserId());
+                    Integer id2 = Math.max(tuple.getT1().getUserId(), tuple.getT2().getUserId());
 
                     return friendRepo.existsByUserId1AndUserId2(id1, id2)
                             .flatMap(exists -> exists
@@ -113,7 +115,7 @@ public class AccountServiceImpl implements AccountService {
         return accountRepo.findByEmail(dto.getEmail())
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
                 .flatMap(account ->
-                        friendRepo.findAllFriendIdsByUserId(account.getUser_id()) // get all friend ids
+                        friendRepo.findAllFriendIdsByUserId(account.getUserId()) // get all friend ids
                                 .collectList() // Mono<List<Integer>>
                                 .flatMap(friendIds -> {
                                     if (friendIds.isEmpty()) {
@@ -135,8 +137,8 @@ public class AccountServiceImpl implements AccountService {
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
                 .flatMap(list -> validateAndFetchAccounts(list.getFirst(), list.get(1)))
                 .flatMap(tuple -> Mono.zip( // get friends of both users
-                        friendRepo.findAllFriendIdsByUserId(tuple.getT1().getUser_id()).collect(Collectors.toSet()),
-                        friendRepo.findAllFriendIdsByUserId(tuple.getT2().getUser_id()).collect(Collectors.toSet())
+                        friendRepo.findAllFriendIdsByUserId(tuple.getT1().getUserId()).collect(Collectors.toSet()),
+                        friendRepo.findAllFriendIdsByUserId(tuple.getT2().getUserId()).collect(Collectors.toSet())
                 ))
                 .flatMap(pair -> { // return sets of friends: Set.of(id2, id3, id4)
                     pair.getT1().retainAll(pair.getT2()); // pair.getT1() = Retain only ids in set pair.getT2()
@@ -155,8 +157,8 @@ public class AccountServiceImpl implements AccountService {
     public Mono<ApiResponseDTO> subscribeUpdates(UserConnectionDTO dto) {
         return validateAndFetchAccounts(dto.getRequestor(), dto.getTarget())
                 .flatMap(tuple -> {
-                    Integer followerId = tuple.getT1().getUser_id();
-                    Integer followeeId = tuple.getT2().getUser_id();
+                    Integer followerId = tuple.getT1().getUserId();
+                    Integer followeeId = tuple.getT2().getUserId();
 
                     return validateNotBlocked(followerId, followeeId) // if not block -> proceed
                             .then(
@@ -177,8 +179,8 @@ public class AccountServiceImpl implements AccountService {
     public Mono<ApiResponseDTO> unsubscribeUpdates(UserConnectionDTO dto) {
         return validateAndFetchAccounts(dto.getRequestor(), dto.getTarget())
                 .flatMap(tuple -> {
-                    Integer followerId = tuple.getT1().getUser_id();
-                    Integer followeeId = tuple.getT2().getUser_id();
+                    Integer followerId = tuple.getT1().getUserId();
+                    Integer followeeId = tuple.getT2().getUserId();
 
                     return followerRepo.existsByFollowerIdAndFolloweeId(followerId, followeeId)
                             .flatMap(exists -> exists
@@ -197,8 +199,8 @@ public class AccountServiceImpl implements AccountService {
     public Mono<ApiResponseDTO> blockUpdates(UserConnectionDTO dto) {
         return validateAndFetchAccounts(dto.getRequestor(), dto.getTarget())
                 .flatMap(tuple -> {
-                    Integer blockerId = tuple.getT1().getUser_id();
-                    Integer blockedId = tuple.getT2().getUser_id();
+                    Integer blockerId = tuple.getT1().getUserId();
+                    Integer blockedId = tuple.getT2().getUserId();
 
                     return blockRepo.existsByBlockerIdAndBlockedId(blockerId, blockedId)
                             .flatMap(exists -> exists
@@ -222,8 +224,8 @@ public class AccountServiceImpl implements AccountService {
     public Mono<ApiResponseDTO> unblockUpdates(UserConnectionDTO dto) {
         return validateAndFetchAccounts(dto.getRequestor(), dto.getTarget())
                 .flatMap(tuple -> {
-                    Integer blockerId = tuple.getT1().getUser_id();
-                    Integer blockedId = tuple.getT2().getUser_id();
+                    Integer blockerId = tuple.getT1().getUserId();
+                    Integer blockedId = tuple.getT2().getUserId();
 
                     return blockRepo.existsByBlockerIdAndBlockedId(blockerId, blockedId)
                             .flatMap(exists -> exists
@@ -235,6 +237,34 @@ public class AccountServiceImpl implements AccountService {
                 .onErrorResume(AppException.class, e ->
                         Mono.just(new ApiResponseDTO(e.getErrorCode()))
                 );
+    }
+
+    private Mono<Boolean> hasNoBlockConnection(Integer userId1, Integer userId2) {
+        return Mono.zip(
+                        blockRepo.existsByBlockerIdAndBlockedId(userId1, userId2),
+                        blockRepo.existsByBlockerIdAndBlockedId(userId2, userId1)
+                )
+                .map(tuple -> !(tuple.getT1() || tuple.getT2())); // true if neither has blocked
+    }
+
+    //@Override
+    public Mono<ApiResponseDTO> getUpdateRecipients(PostDTO dto) {
+        return accountRepo.findByEmail(dto.getSender())
+                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+                .flatMap(sender -> {
+                    Integer senderId = sender.getUserId();
+
+                    return Flux.merge( // merge all 3 sources into one reactive stream
+                                    friendRepo.findAllFriendIdsByUserId(senderId).flatMap(accountRepo::findById),
+                                    followerRepo.findByFolloweeId(senderId).flatMap(accountRepo::findById),
+                                    Flux.fromIterable(dto.extractEmails()).flatMap(accountRepo::findByEmail) // list -> Flux<String>
+                            )
+                            .distinct()  // remove duplicate accounts
+                            .filterWhen(acc -> hasNoBlockConnection(senderId, acc.getUserId())) // filter for recipients that have no blocks
+                            .map(Account::getEmail)
+                            .collectList()
+                            .map(recipients -> new ApiResponseDTO(true, recipients));
+                });
     }
 }
 

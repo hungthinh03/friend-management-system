@@ -2,6 +2,7 @@ package com.example.friendmanagementsystem.service;
 
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
+import com.example.friendmanagementsystem.dto.PostDTO;
 import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import reactor.core.publisher.Mono;
 
@@ -23,4 +24,6 @@ public interface AccountService {
     //
     Mono<ApiResponseDTO> blockUpdates(UserConnectionDTO dto);
     Mono<ApiResponseDTO> unblockUpdates(UserConnectionDTO dto);
+    //
+    Mono<ApiResponseDTO> getUpdateRecipients(PostDTO dto);
 }

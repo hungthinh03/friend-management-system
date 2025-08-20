@@ -15,6 +15,7 @@ public class ApiResponseDTO {
     private String message;
     private Integer statusCode;
     private List<String> friends;
+    private List<String> recipients;
     private Integer count;
 
 
@@ -32,5 +33,10 @@ public class ApiResponseDTO {
         this.success = success;
         this.friends = friends;
         this.count = count;
+    }
+
+    public ApiResponseDTO(boolean success, List<String> recipients) {
+        this.success = success;
+        this.recipients = recipients;
     }
 }
