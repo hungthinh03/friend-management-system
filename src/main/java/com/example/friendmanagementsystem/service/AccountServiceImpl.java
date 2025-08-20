@@ -33,10 +33,33 @@ public class AccountServiceImpl implements AccountService {
     @Autowired
     private BlockRepository blockRepo;
 
-
     @Override
     public Mono<List<String>> getAllEmails() {
         return accountRepo.findAllEmails().collectList();
+    }
+
+    // Helper
+    private Mono<Tuple2<Account, Account>> validateAndFetchAccounts(String email1, String email2) {
+        if (email1.equalsIgnoreCase(email2)) {
+            return Mono.error(new AppException(ErrorCode.SAME_EMAILS)); // Emails must not be the same
+        }
+        return Mono.zip(
+                accountRepo.findByEmail(email1)
+                        .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
+                accountRepo.findByEmail(email2)
+                        .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+        );
+    }
+
+    private Mono<Void> validateNotBlocked(Integer userId1, Integer userId2) {
+        return Mono.zip( // Check if exists block (id1,id2) or (id2,id1)
+                        blockRepo.existsByBlockerIdAndBlockedId(userId1, userId2),
+                        blockRepo.existsByBlockerIdAndBlockedId(userId2, userId1)
+                )
+                .map(tuple -> tuple.getT1() || tuple.getT2())
+                .filter(exists -> !exists) // exists = true if either block exists
+                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_CONNECTION_BLOCKED)))
+                .then(); // returns void instead of Mono<Boolean>
     }
 
     @Override
@@ -44,23 +67,19 @@ public class AccountServiceImpl implements AccountService {
         return Mono.justOrEmpty(dto.getFriends())
                 .filter(list -> list != null && list.size() == 2) // Must have exactly 2 emails
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
-                .filter(list -> !list.getFirst().equalsIgnoreCase(list.get(1))) // Emails must not be the same
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
-                .flatMap(validFriends -> Mono.zip( // Subscribes in parallel, waits for both to complete
-                        accountRepo.findByEmail(validFriends.getFirst())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
-                        accountRepo.findByEmail(validFriends.get(1))
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-                ))
+                .flatMap(list -> validateAndFetchAccounts(list.getFirst(), list.get(1))) // Helper
                 .flatMap(tuple -> { // order (smaller_id, bigger_id)
                     Integer id1 = Math.min(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
                     Integer id2 = Math.max(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
 
-                    return friendRepo.existsByUserId1AndUserId2(id1, id2)
-                            .flatMap(exists -> exists
-                                    ? Mono.error(new AppException(ErrorCode.ALREADY_FRIENDS)) // true
-                                    : friendRepo.save(new Friend(id1, id2)) // false
-                                    .thenReturn(new ApiResponseDTO(true))
+                    return validateNotBlocked(id1, id2) // if not block -> proceed
+                            .then(
+                                    friendRepo.existsByUserId1AndUserId2(id1, id2)
+                                        .flatMap(exists -> exists
+                                                ? Mono.error(new AppException(ErrorCode.ALREADY_FRIENDS)) // true
+                                                : friendRepo.save(new Friend(id1, id2)) // false
+                                                .thenReturn(new ApiResponseDTO(true))
+                                        )
                             );
                 })
                 .onErrorResume(AppException.class, e ->
@@ -73,14 +92,7 @@ public class AccountServiceImpl implements AccountService {
         return Mono.justOrEmpty(dto.getFriends())
                 .filter(list -> list.size() == 2)
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
-                .filter(list -> !list.getFirst().equalsIgnoreCase(list.get(1)))
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
-                .flatMap(friends -> Mono.zip(
-                        accountRepo.findByEmail(friends.getFirst())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
-                        accountRepo.findByEmail(friends.get(1))
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-                ))
+                .flatMap(list -> validateAndFetchAccounts(list.getFirst(), list.get(1)))
                 .flatMap(tuple -> {
                     Integer id1 = Math.min(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
                     Integer id2 = Math.max(tuple.getT1().getUser_id(), tuple.getT2().getUser_id());
@@ -121,14 +133,7 @@ public class AccountServiceImpl implements AccountService {
         return Mono.justOrEmpty(dto.getFriends())
                 .filter(list -> list.size() == 2)
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
-                .filter(list -> !list.getFirst().equalsIgnoreCase(list.get(1)))
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
-                .flatMap(friends -> Mono.zip(
-                        accountRepo.findByEmail(friends.getFirst())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
-                        accountRepo.findByEmail(friends.get(1))
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-                ))
+                .flatMap(list -> validateAndFetchAccounts(list.getFirst(), list.get(1)))
                 .flatMap(tuple -> Mono.zip( // get friends of both users
                         friendRepo.findAllFriendIdsByUserId(tuple.getT1().getUser_id()).collect(Collectors.toSet()),
                         friendRepo.findAllFriendIdsByUserId(tuple.getT2().getUser_id()).collect(Collectors.toSet())
@@ -145,18 +150,6 @@ public class AccountServiceImpl implements AccountService {
                 .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
     }
 
-    // Helper UserConnectionDTO
-    private Mono<Tuple2<Account, Account>> validateAndFetchAccounts(String email1, String email2) {
-        if (email1.equalsIgnoreCase(email2)) {
-            return Mono.error(new AppException(ErrorCode.SAME_EMAILS));
-        }
-        return Mono.zip(
-                accountRepo.findByEmail(email1)
-                        .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
-                accountRepo.findByEmail(email2)
-                        .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-        );
-    }
 
     @Override
     public Mono<ApiResponseDTO> subscribeUpdates(UserConnectionDTO dto) {
@@ -165,13 +158,7 @@ public class AccountServiceImpl implements AccountService {
                     Integer followerId = tuple.getT1().getUser_id();
                     Integer followeeId = tuple.getT2().getUser_id();
 
-                    return Mono.zip( // Check if any block exist
-                                    blockRepo.existsByBlockerIdAndBlockedId(followerId, followeeId),
-                                    blockRepo.existsByBlockerIdAndBlockedId(followeeId, followerId)
-                            )
-                            .map(blocks -> blocks.getT1() || blocks.getT2())
-                            .filter(blockExists -> !blockExists)  // blockExists = true if either block exists
-                            .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_CONNECTION_BLOCKED)))
+                    return validateNotBlocked(followerId, followeeId) // if not block -> proceed
                             .then(
                                     followerRepo.existsByFollowerIdAndFolloweeId(followerId, followeeId)
                                             .flatMap(exists -> exists
@@ -188,15 +175,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Mono<ApiResponseDTO> unsubscribeUpdates(UserConnectionDTO dto) {
-        return Mono.just(dto)
-                .filter(d -> !d.getRequestor().equalsIgnoreCase(d.getTarget()))
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
-                .flatMap(d -> Mono.zip(
-                        accountRepo.findByEmail(d.getRequestor())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
-                        accountRepo.findByEmail(d.getTarget())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-                ))
+        return validateAndFetchAccounts(dto.getRequestor(), dto.getTarget())
                 .flatMap(tuple -> {
                     Integer followerId = tuple.getT1().getUser_id();
                     Integer followeeId = tuple.getT2().getUser_id();
@@ -216,15 +195,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Mono<ApiResponseDTO> blockUpdates(UserConnectionDTO dto) {
-        return Mono.just(dto)
-                .filter(d -> !d.getRequestor().equalsIgnoreCase(d.getTarget()))
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
-                .flatMap(d -> Mono.zip(
-                        accountRepo.findByEmail(d.getRequestor())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
-                        accountRepo.findByEmail(d.getTarget())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-                ))
+        return validateAndFetchAccounts(dto.getRequestor(), dto.getTarget())
                 .flatMap(tuple -> {
                     Integer blockerId = tuple.getT1().getUser_id();
                     Integer blockedId = tuple.getT2().getUser_id();
@@ -249,15 +220,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public Mono<ApiResponseDTO> unblockUpdates(UserConnectionDTO dto) {
-        return Mono.just(dto)
-                .filter(d -> !d.getRequestor().equalsIgnoreCase(d.getTarget()))
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.SAME_EMAILS)))
-                .flatMap(d -> Mono.zip(
-                        accountRepo.findByEmail(d.getRequestor())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND))),
-                        accountRepo.findByEmail(d.getTarget())
-                                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-                ))
+        return validateAndFetchAccounts(dto.getRequestor(), dto.getTarget())
                 .flatMap(tuple -> {
                     Integer blockerId = tuple.getT1().getUser_id();
                     Integer blockedId = tuple.getT2().getUser_id();
