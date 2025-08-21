@@ -1,5 +1,6 @@
 package com.example.friendmanagementsystem.controller;
 
+import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
 import com.example.friendmanagementsystem.service.AccountService;
@@ -54,24 +55,103 @@ class AccountControllerTest {
                 .jsonPath("$.success").isEqualTo(true);
     }
 
-    /*
     @Test
-    void addFriend_api_invalidRequest() {
-        // Empty DTO triggers INVALID_REQUEST
+    void addFriend_api_userNotFound() {
         AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "john@example.com"));
 
+        // Mock service to simulate user not found error
+        when(accountService.addFriend(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+
+        webTestClient.post()
+                .uri("/account")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1002)
+                .jsonPath("$.message").isEqualTo("User not found")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void addFriend_api_invalidRequest() { // Invalid request (not exactly 2 emails)
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com")); // only 1 email -> invalid
+
+        // Mock service to simulate invalid request
         when(accountService.addFriend(any(AccountDTO.class)))
                 .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.INVALID_REQUEST)));
 
         webTestClient.post()
-                .uri("/accounts/friends")
+                .uri("/account")
                 .bodyValue(dto)
                 .exchange()
                 .expectStatus().isOk()
-                .expectBody(ApiResponseDTO.class)
-                .value(resp -> assertEquals(ErrorCode.INVALID_REQUEST, resp.getError().getCode()));
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1001)
+                .jsonPath("$.message").isEqualTo("Invalid request")
+                .jsonPath("$.status").isEqualTo("error");
     }
 
-     */
+
+    @Test
+    void addFriend_api_sameEmails() { // Fail case: Emails must be different
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "andy@example.com")); // same email twice
+
+        // Mock service to simulate SAME_EMAILS error
+        when(accountService.addFriend(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.SAME_EMAILS)));
+
+        webTestClient.post()
+                .uri("/account")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1009)
+                .jsonPath("$.message").isEqualTo("Emails must be different")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void addFriend_api_alreadyFriends() { // Fail case: Users already friends
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "john@example.com"));
+
+        when(accountService.addFriend(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.ALREADY_FRIENDS)));
+
+        webTestClient.post()
+                .uri("/account")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1003)
+                .jsonPath("$.message").isEqualTo("Users are already friends")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void addFriend_api_blockedUser() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "john@example.com"));
+
+        when(accountService.addFriend(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_CONNECTION_BLOCKED)));
+
+        webTestClient.post()
+                .uri("/account")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1010)
+                .jsonPath("$.message").isEqualTo("You or this user has blocked the other")
+                .jsonPath("$.status").isEqualTo("error");
+    }
 }
 
