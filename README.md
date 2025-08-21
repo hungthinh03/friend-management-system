@@ -57,6 +57,15 @@ Project API features:
      }
      ```
 
+     - **You or this user has blocked the other** - Returned when either user has blocked the other:
+     ```json
+     { 
+         "status": "error",
+         "message": "You or this user has blocked the other",
+         "statusCode": 1010
+     }
+     ```
+
      - **Users are already friends** - Returned when the two users are already friends:
      ```json
      { 
@@ -202,6 +211,15 @@ Project API features:
      }
      ```
 
+     - **You or this user has blocked the other** - Returned when either user has blocked the other:
+     ```json
+     { 
+         "status": "error",
+         "message": "You or this user has blocked the other",
+         "statusCode": 1010
+     }
+     ```
+
      - **Already followed** - Returned when user A is already following user B:
      ```json
      { 
@@ -215,7 +233,7 @@ Project API features:
    - **API name**: /blockUpdates  
    - **Method**: POST  
    - **Description**: User A blocks user B
-      - **Note**: Any follows between user A and user B are removed. They cannot follow or add each other as friends if not already
+      - **Note**: If user B follows user A, they are removed. They cannot follow or add each other as friends.
    - **JSON request**:  
      ```json
      { 
@@ -341,7 +359,7 @@ The system will use a relational database with the following core tables:
 **Database ER Diagram**  
 <img src="assets/db.png" style="width:75%;"/>
 
-SQL Script to recreate the database: [frienddb.sql](./sql/frienddb.sql)
+SQL Script to recreate the database: [schema.sql](./sql/frienddb.sql)
 
 ## 5. Technical Specifications
 - **Architecture:** RESTful API.
