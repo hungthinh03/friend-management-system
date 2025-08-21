@@ -1,6 +1,5 @@
 package com.example.friendmanagementsystem.service;
 
-import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
 import com.example.friendmanagementsystem.model.Account;
@@ -29,8 +28,8 @@ class AccountServiceTest {
     private AccountRepository accountRepo;
     @Mock
     private FriendRepository friendRepo;
-    @Mock
-    private FollowerRepository followerRepo;
+    //@Mock
+    //private FollowerRepository followerRepo;
     @Mock
     private BlockRepository blockRepo;
 
