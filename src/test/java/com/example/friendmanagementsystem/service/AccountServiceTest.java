@@ -12,10 +12,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -128,5 +130,140 @@ class AccountServiceTest {
                 .verifyComplete();
     }
 
+    // Unfriend
+    @Test
+    void removeFriend_success() {
+        Account acc1 = new Account(1, "a@example.com");
+        Account acc2 = new Account(2, "b@example.com");
 
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("a@example.com", "b@example.com"));
+
+        when(accountRepo.findByEmail("a@example.com")).thenReturn(Mono.just(acc1));
+        when(accountRepo.findByEmail("b@example.com")).thenReturn(Mono.just(acc2));
+        when(friendRepo.existsByUserId1AndUserId2(1, 2)).thenReturn(Mono.just(true));
+        when(friendRepo.deleteByUserId1AndUserId2(1, 2)).thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.removeFriend(dto))
+                .expectNextMatches(ApiResponseDTO::getSuccess)
+                .verifyComplete();
+    }
+
+    @Test
+    void removeFriend_notFriends() {
+        Account acc1 = new Account(1, "a@example.com");
+        Account acc2 = new Account(2, "b@example.com");
+
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("a@example.com", "b@example.com"));
+
+        when(accountRepo.findByEmail("a@example.com")).thenReturn(Mono.just(acc1));
+        when(accountRepo.findByEmail("b@example.com")).thenReturn(Mono.just(acc2));
+        when(friendRepo.existsByUserId1AndUserId2(1, 2)).thenReturn(Mono.just(false));
+
+        StepVerifier.create(accountService.removeFriend(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1004
+                        && resp.getMessage().equals("Users are not friends"))
+                .verifyComplete();
+    }
+
+    // Get friends
+    @Test
+    void getFriends_success() {
+        Account acc1 = new Account(1, "andy@example.com");
+        Account acc2 = new Account(2, "john@example.com");
+
+        AccountDTO dto = new AccountDTO();
+        dto.setEmail("andy@example.com");
+
+        when(accountRepo.findByEmail("andy@example.com")).thenReturn(Mono.just(acc1));
+        when(friendRepo.findAllFriendIdsByUserId(1)).thenReturn(Flux.just(2));
+        when(accountRepo.findAllById(List.of(2))).thenReturn(Flux.just(acc2));
+
+        StepVerifier.create(accountService.getFriends(dto))
+                .expectNextMatches(res ->
+                        res.getSuccess()
+                                && res.getFriends().contains("john@example.com")
+                                && res.getCount() == 1
+                )
+                .verifyComplete();
+    }
+
+    @Test
+    void getFriends_userNotFound() {
+        AccountDTO dto = new AccountDTO();
+        dto.setEmail("missing@example.com");
+
+        when(accountRepo.findByEmail("missing@example.com")).thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.getFriends(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1002
+                        && resp.getMessage().equals("User not found"))
+                .verifyComplete();
+    }
+
+
+    // Get mutual
+    @Test
+    void getCommonFriends_success() {
+        Account acc1 = new Account(1, "andy@example.com");
+        Account acc2 = new Account(2, "john@example.com");
+
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of(acc1.getEmail(), acc2.getEmail()));
+
+        when(accountRepo.findByEmail(acc1.getEmail())).thenReturn(Mono.just(acc1));
+        when(accountRepo.findByEmail(acc2.getEmail())).thenReturn(Mono.just(acc2));
+
+        // Mock friends of both users
+        when(friendRepo.findAllFriendIdsByUserId(acc1.getUserId()))
+                .thenReturn(Flux.just(3, 4)); // ids of friends
+        when(friendRepo.findAllFriendIdsByUserId(acc2.getUserId()))
+                .thenReturn(Flux.just(4, 5)); // ids of friends
+
+        when(accountRepo.findAllById(Set.of(4))).thenReturn(Flux.just(new Account(4, "common@example.com")));
+
+        StepVerifier.create(accountService.getCommonFriends(dto))
+                .expectNextMatches(resp -> resp.getSuccess() != null
+                        && resp.getSuccess()
+                        && resp.getFriends().size() == 1
+                        && resp.getFriends().contains("common@example.com")
+                        && resp.getCount() == 1)
+                .verifyComplete();
+    }
+
+    @Test
+    void getCommonFriends_userNotFound() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "john@example.com"));
+
+        when(accountRepo.findByEmail(anyString())).thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.getCommonFriends(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1002
+                        && resp.getMessage().equals("User not found"))
+                .verifyComplete();
+    }
+
+    @Test
+    void getCommonFriends_invalidRequest() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("onlyone@example.com"));
+
+        StepVerifier.create(accountService.getCommonFriends(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1001
+                        && resp.getMessage().equals("Invalid request"))
+                .verifyComplete();
+    }
+
+    @Test
+    void getCommonFriends_sameEmails() {
+        var dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "andy@example.com"));
+
+        StepVerifier.create(accountService.getCommonFriends(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1009
+                        && resp.getMessage().equals("Emails must be different"))
+                .verifyComplete();
+    }
 }

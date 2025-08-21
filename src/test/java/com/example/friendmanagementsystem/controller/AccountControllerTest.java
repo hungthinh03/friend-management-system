@@ -10,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -36,8 +37,9 @@ class AccountControllerTest {
         }
     }
 
+    // add friend
     @Test
-    void addFriend_api_success() {
+    void addFriend_success() {
         AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("a@example.com", "b@example.com"));
 
@@ -56,7 +58,7 @@ class AccountControllerTest {
     }
 
     @Test
-    void addFriend_api_userNotFound() {
+    void addFriend_userNotFound() {
         AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("andy@example.com", "john@example.com"));
 
@@ -76,7 +78,7 @@ class AccountControllerTest {
     }
 
     @Test
-    void addFriend_api_invalidRequest() { // Invalid request (not exactly 2 emails)
+    void addFriend_invalidRequest() { // Invalid request (not exactly 2 emails)
         AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("andy@example.com")); // only 1 email -> invalid
 
@@ -97,7 +99,7 @@ class AccountControllerTest {
 
 
     @Test
-    void addFriend_api_sameEmails() { // Fail case: Emails must be different
+    void addFriend_sameEmails() { // Fail case: Emails must be different
         AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("andy@example.com", "andy@example.com")); // same email twice
 
@@ -117,7 +119,7 @@ class AccountControllerTest {
     }
 
     @Test
-    void addFriend_api_alreadyFriends() { // Fail case: Users already friends
+    void addFriend_alreadyFriends() { // Fail case: Users already friends
         AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("andy@example.com", "john@example.com"));
 
@@ -136,7 +138,7 @@ class AccountControllerTest {
     }
 
     @Test
-    void addFriend_api_blockedUser() {
+    void addFriend_blockedUser() {
         AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("andy@example.com", "john@example.com"));
 
@@ -151,6 +153,165 @@ class AccountControllerTest {
                 .expectBody()
                 .jsonPath("$.statusCode").isEqualTo(1010)
                 .jsonPath("$.message").isEqualTo("You or this user has blocked the other")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void removeFriend_success() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "john@example.com"));
+
+        when(accountService.removeFriend(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(true)));
+
+        webTestClient
+                .method(HttpMethod.DELETE)
+                .uri("/account")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true);
+    }
+
+    @Test
+    void removeFriend_notFriends() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "john@example.com"));
+
+        when(accountService.removeFriend(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.NOT_FRIENDS)));
+
+        webTestClient
+                .method(HttpMethod.DELETE)
+                .uri("/account")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo("error")
+                .jsonPath("$.message").isEqualTo("Users are not friends")
+                .jsonPath("$.statusCode").isEqualTo(1004);
+    }
+
+
+    // Get friends
+    @Test
+    void getFriends_success() {
+        AccountDTO dto = new AccountDTO();
+        dto.setEmail("andy@example.com");
+
+        ApiResponseDTO response = new ApiResponseDTO(true, List.of("john@example.com"), 1);
+
+        when(accountService.getFriends(any(AccountDTO.class)))
+                .thenReturn(Mono.just(response));
+
+        webTestClient.post()
+                .uri("/account/friends")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.friends[0]").isEqualTo("john@example.com")
+                .jsonPath("$.count").isEqualTo(1);
+    }
+
+    @Test
+    void getFriends_userNotFound() {
+        AccountDTO dto = new AccountDTO();
+        dto.setEmail("andy@example.com");
+
+        when(accountService.getFriends(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+
+        webTestClient.post()
+                .uri("/account/friends")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo("error")
+                .jsonPath("$.message").isEqualTo("User not found")
+                .jsonPath("$.statusCode").isEqualTo(1002);
+    }
+
+
+    // Get mutual
+    @Test
+    void getCommonFriends_success() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "john@example.com"));
+
+        // Mock service response
+        when(accountService.getCommonFriends(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(true, List.of("common@example.com"), 1)));
+
+        webTestClient.post()
+                .uri("/account/friend/mutual")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.friends[0]").isEqualTo("common@example.com")
+                .jsonPath("$.count").isEqualTo(1);
+    }
+
+    @Test
+    void getCommonFriends_invalidRequest() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("onlyone@example.com"));
+
+        when(accountService.getCommonFriends(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.INVALID_REQUEST)));
+
+        webTestClient.post()
+                .uri("/account/friend/mutual")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1001)
+                .jsonPath("$.message").isEqualTo("Invalid request")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void getCommonFriends_userNotFound() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "john@example.com"));
+
+        when(accountService.getCommonFriends(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+
+        webTestClient.post()
+                .uri("/account/friend/mutual")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1002)
+                .jsonPath("$.message").isEqualTo("User not found")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void getCommonFriends_sameEmails() {
+        AccountDTO dto = new AccountDTO();
+        dto.setFriends(List.of("andy@example.com", "andy@example.com"));
+
+        when(accountService.getCommonFriends(any(AccountDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.SAME_EMAILS)));
+
+        webTestClient.post()
+                .uri("/account/friend/mutual")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1009)
+                .jsonPath("$.message").isEqualTo("Emails must be different")
                 .jsonPath("$.status").isEqualTo("error");
     }
 }

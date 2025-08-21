@@ -124,7 +124,8 @@ public class AccountServiceImpl implements AccountService {
                                     return accountRepo.findAllById(friendIds) // fetch all accounts at once
                                             .map(Account::getEmail)
                                             .collectList()
-                                            .map(friendsList -> new ApiResponseDTO(true, friendsList, friendsList.size()));
+                                            .map(friendsList ->
+                                                    new ApiResponseDTO(true, friendsList, friendsList.size()));
                                 })
                 )
                 .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
@@ -249,22 +250,27 @@ public class AccountServiceImpl implements AccountService {
 
     //@Override
     public Mono<ApiResponseDTO> getUpdateRecipients(PostDTO dto) {
-        return accountRepo.findByEmail(dto.getSender())
-                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
-                .flatMap(sender -> {
-                    Integer senderId = sender.getUserId();
+        return Mono.just(dto)
+                .filter(d -> d.getText() != null && !d.getText().isBlank())
+                .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
+                .flatMap(validDto -> accountRepo.findByEmail(validDto.getSender())
+                        .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+                        .flatMap(sender -> {
+                            Integer senderId = sender.getUserId();
+                            String senderEmail = sender.getEmail();
 
-                    return Flux.merge( // merge all 3 sources into one reactive stream
-                                    friendRepo.findAllFriendIdsByUserId(senderId).flatMap(accountRepo::findById),
-                                    followerRepo.findByFolloweeId(senderId).flatMap(accountRepo::findById),
-                                    Flux.fromIterable(dto.extractEmails()).flatMap(accountRepo::findByEmail) // list -> Flux<String>
-                            )
-                            .distinct()  // remove duplicate accounts
-                            .filterWhen(acc -> hasNoBlockConnection(senderId, acc.getUserId())) // filter for recipients that have no blocks
-                            .map(Account::getEmail)
-                            .collectList()
-                            .map(recipients -> new ApiResponseDTO(true, recipients));
-                });
+                            return Flux.merge(
+                                            friendRepo.findAllFriendIdsByUserId(senderId).flatMap(accountRepo::findById),
+                                            followerRepo.findByFolloweeId(senderId).flatMap(accountRepo::findById),
+                                            Flux.fromIterable(validDto.extractEmails()).flatMap(accountRepo::findByEmail)
+                                    )
+                                    .distinct()
+                                    .filterWhen(acc -> hasNoBlockConnection(senderId, acc.getUserId()))
+                                    .filter(acc -> !acc.getEmail().equalsIgnoreCase(senderEmail))
+                                    .map(Account::getEmail)
+                                    .collectList()
+                                    .map(recipients -> new ApiResponseDTO(true, recipients));
+                        }));
     }
 }
 
