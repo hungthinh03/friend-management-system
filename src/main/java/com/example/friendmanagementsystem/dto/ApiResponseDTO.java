@@ -3,10 +3,12 @@ package com.example.friendmanagementsystem.dto;
 import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponseDTO {
     private Boolean success;
