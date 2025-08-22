@@ -3,6 +3,7 @@ package com.example.friendmanagementsystem.controller;
 import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
+import com.example.friendmanagementsystem.dto.PostDTO;
 import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import com.example.friendmanagementsystem.service.AccountService;
 import org.junit.jupiter.api.Test;
@@ -439,5 +440,168 @@ class AccountControllerTest {
                 .jsonPath("$.message").isEqualTo("User is not followed")
                 .jsonPath("$.status").isEqualTo("error");
     }
+
+
+    //Block
+    @Test
+    void blockUpdates_success() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "john@example.com");
+
+        when(accountService.blockUpdates(any(UserConnectionDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(true)));
+
+        webTestClient.post()
+                .uri("/account/block")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true);
+    }
+
+    @Test
+    void blockUpdates_userNotFound() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "ghost@example.com");
+
+        when(accountService.blockUpdates(any(UserConnectionDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+
+        webTestClient.post()
+                .uri("/account/block")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1002)
+                .jsonPath("$.message").isEqualTo("User not found")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void blockUpdates_sameEmails() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "andy@example.com");
+
+        when(accountService.blockUpdates(any(UserConnectionDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.SAME_EMAILS)));
+
+        webTestClient.post()
+                .uri("/account/block")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1009)
+                .jsonPath("$.message").isEqualTo("Emails must be different")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void blockUpdates_alreadyBlocked() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "john@example.com");
+
+        when(accountService.blockUpdates(any(UserConnectionDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.ALREADY_BLOCKED)));
+
+        webTestClient.post()
+                .uri("/account/block")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1007)
+                .jsonPath("$.message").isEqualTo("User is already blocked")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void unblockUpdates_success() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "john@example.com");
+
+        when(accountService.unblockUpdates(any(UserConnectionDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(true)));
+
+        webTestClient.method(HttpMethod.DELETE)
+                .uri("/account/block")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true);
+    }
+
+    @Test
+    void unblockUpdates_notBlocked() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "john@example.com");
+
+        when(accountService.unblockUpdates(any(UserConnectionDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.NOT_BLOCKED)));
+
+        webTestClient.method(HttpMethod.DELETE)
+                .uri("/account/block")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1008)
+                .jsonPath("$.message").isEqualTo("User is not blocked")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+
+    // Get recipients
+    @Test
+    void getUpdateRecipients_success() {
+        PostDTO dto = new PostDTO("john@example.com", "Hello! kate@example.com");
+
+        when(accountService.getUpdateRecipients(any(PostDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(true, List.of("lisa@example.com", "kate@example.com"))));
+
+        webTestClient.post()
+                .uri("/account/post")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.recipients[0]").isEqualTo("lisa@example.com")
+                .jsonPath("$.recipients[1]").isEqualTo("kate@example.com");
+    }
+
+    @Test
+    void getUpdateRecipients_userNotFound() {
+        PostDTO dto = new PostDTO("ghost@example.com", "Hello! kate@example.com");
+
+        when(accountService.getUpdateRecipients(any(PostDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+
+        webTestClient.post()
+                .uri("/account/post")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1002)
+                .jsonPath("$.message").isEqualTo("User not found")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void getUpdateRecipients_invalidRequest() {
+        PostDTO dto = new PostDTO("john@example.com", "");
+
+        when(accountService.getUpdateRecipients(any(PostDTO.class)))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.INVALID_REQUEST)));
+
+        webTestClient.post()
+                .uri("/account/post")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1001)
+                .jsonPath("$.message").isEqualTo("Invalid request")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
 }
 

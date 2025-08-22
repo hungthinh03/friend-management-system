@@ -248,7 +248,7 @@ public class AccountServiceImpl implements AccountService {
                 .map(tuple -> !(tuple.getT1() || tuple.getT2())); // true if neither has blocked
     }
 
-    //@Override
+    @Override
     public Mono<ApiResponseDTO> getUpdateRecipients(PostDTO dto) {
         return Mono.just(dto)
                 .filter(d -> d.getText() != null && !d.getText().isBlank())
@@ -270,7 +270,8 @@ public class AccountServiceImpl implements AccountService {
                                     .map(Account::getEmail)
                                     .collectList()
                                     .map(recipients -> new ApiResponseDTO(true, recipients));
-                        }));
+                        }))
+                .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
     }
 }
 

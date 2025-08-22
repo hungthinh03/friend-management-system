@@ -2,8 +2,10 @@ package com.example.friendmanagementsystem.service;
 
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
+import com.example.friendmanagementsystem.dto.PostDTO;
 import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import com.example.friendmanagementsystem.model.Account;
+import com.example.friendmanagementsystem.model.Block;
 import com.example.friendmanagementsystem.model.Friend;
 import com.example.friendmanagementsystem.model.Follower;
 import com.example.friendmanagementsystem.repository.AccountRepository;
@@ -383,6 +385,153 @@ class AccountServiceTest {
         StepVerifier.create(accountService.unsubscribeUpdates(dto))
                 .expectNextMatches(resp -> resp.getStatusCode() == 1006
                         && resp.getMessage().equals("User is not followed"))
+                .verifyComplete();
+    }
+
+
+    // Block
+    @Test
+    void blockUpdates_success() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "john@example.com");
+        Account acc1 = new Account(1, "andy@example.com");
+        Account acc2 = new Account(2, "john@example.com");
+
+        when(accountRepo.findByEmail("andy@example.com")).thenReturn(Mono.just(acc1));
+        when(accountRepo.findByEmail("john@example.com")).thenReturn(Mono.just(acc2));
+        when(blockRepo.existsByBlockerIdAndBlockedId(1, 2)).thenReturn(Mono.just(false));
+        when(blockRepo.save(any(Block.class))).thenReturn(Mono.just(new Block(1, 2)));
+        when(followerRepo.deleteByFollowerIdAndFolloweeId(anyInt(), anyInt())).thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.blockUpdates(dto))
+                .expectNextMatches(ApiResponseDTO::getSuccess)
+                .verifyComplete();
+    }
+
+    @Test
+    void blockUpdates_userNotFound() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "ghost@example.com");
+        when(accountRepo.findByEmail("andy@example.com")).thenReturn(Mono.just(new Account(1, "andy@example.com")));
+        when(accountRepo.findByEmail("ghost@example.com")).thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.blockUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1002
+                        && resp.getMessage().equals("User not found"))
+                .verifyComplete();
+    }
+
+    @Test
+    void blockUpdates_sameEmails() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "andy@example.com");
+
+        StepVerifier.create(accountService.blockUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1009
+                        && resp.getMessage().equals("Emails must be different"))
+                .verifyComplete();
+    }
+
+    @Test
+    void blockUpdates_alreadyBlocked() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "john@example.com");
+        Account acc1 = new Account(1, "andy@example.com");
+        Account acc2 = new Account(2, "john@example.com");
+
+        when(accountRepo.findByEmail("andy@example.com")).thenReturn(Mono.just(acc1));
+        when(accountRepo.findByEmail("john@example.com")).thenReturn(Mono.just(acc2));
+        when(blockRepo.existsByBlockerIdAndBlockedId(1, 2)).thenReturn(Mono.just(true));
+
+        StepVerifier.create(accountService.blockUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1007
+                        && resp.getMessage().equals("User is already blocked"))
+                .verifyComplete();
+    }
+
+    @Test
+    void unblockUpdates_success() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "john@example.com");
+        Account acc1 = new Account(1, "andy@example.com");
+        Account acc2 = new Account(2, "john@example.com");
+
+        // Mock account fetching
+        when(accountRepo.findByEmail("andy@example.com")).thenReturn(Mono.just(acc1));
+        when(accountRepo.findByEmail("john@example.com")).thenReturn(Mono.just(acc2));
+
+
+        when(blockRepo.existsByBlockerIdAndBlockedId(acc1.getUserId(), acc2.getUserId()))
+                .thenReturn(Mono.just(true));
+        when(blockRepo.deleteByBlockerIdAndBlockedId(acc1.getUserId(), acc2.getUserId()))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.unblockUpdates(dto))
+                .expectNextMatches(resp -> resp.getSuccess() != null && resp.getSuccess())
+                .verifyComplete();
+    }
+
+    @Test
+    void unblockUpdates_notBlocked() {
+        UserConnectionDTO dto = new UserConnectionDTO("andy@example.com", "john@example.com");
+        Account acc1 = new Account(1, "andy@example.com");
+        Account acc2 = new Account(2, "john@example.com");
+
+        when(accountRepo.findByEmail("andy@example.com")).thenReturn(Mono.just(acc1));
+        when(accountRepo.findByEmail("john@example.com")).thenReturn(Mono.just(acc2));
+
+        when(blockRepo.existsByBlockerIdAndBlockedId(acc1.getUserId(), acc2.getUserId()))
+                .thenReturn(Mono.just(false));
+        StepVerifier.create(accountService.unblockUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1008
+                        && resp.getMessage().equals("User is not blocked"))
+                .verifyComplete();
+    }
+
+
+    // Get recipients
+    @Test
+    void getUpdateRecipients_success() {
+        PostDTO dto = new PostDTO("john@example.com", "Hello! kate@example.com");
+        Account sender = new Account(1, "john@example.com");
+        Account friend = new Account(2, "lisa@example.com");
+        Account follower = new Account(3, "andy@example.com");
+        Account mentioned = new Account(4, "kate@example.com");
+
+        when(accountRepo.findByEmail(sender.getEmail())).thenReturn(Mono.just(sender));
+        when(friendRepo.findAllFriendIdsByUserId(sender.getUserId())).thenReturn(Flux.just(friend.getUserId()));
+        when(followerRepo.findByFolloweeId(sender.getUserId())).thenReturn(Flux.just(follower.getUserId()));
+        when(accountRepo.findById(friend.getUserId())).thenReturn(Mono.just(friend));
+        when(accountRepo.findById(follower.getUserId())).thenReturn(Mono.just(follower));
+        when(accountRepo.findByEmail(mentioned.getEmail())).thenReturn(Mono.just(mentioned));
+        when(blockRepo.existsByBlockerIdAndBlockedId(anyInt(), anyInt())).thenReturn(Mono.just(false));
+
+        StepVerifier.create(accountService.getUpdateRecipients(dto))
+                .expectNextMatches(resp -> resp.getSuccess() != null && resp.getSuccess() &&
+                                resp.getRecipients()
+                                        .containsAll(List.of("lisa@example.com", "andy@example.com", "kate@example.com"))
+                )
+                .verifyComplete();
+    }
+
+    @Test
+    void getUpdateRecipients_userNotFound() {
+        PostDTO dto = new PostDTO("ghost@example.com", "Hello! kate@example.com");
+
+        when(accountRepo.findByEmail("ghost@example.com")).thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.getUpdateRecipients(dto))
+                .expectNextMatches(resp ->
+                        resp.getStatusCode() == 1002 &&
+                                resp.getMessage().equals("User not found")
+                )
+                .verifyComplete();
+    }
+
+    @Test
+    void getUpdateRecipients_invalidRequest() {
+        PostDTO dto = new PostDTO("john@example.com", "");
+
+        StepVerifier.create(accountService.getUpdateRecipients(dto))
+                .expectNextMatches(resp ->
+                        resp.getStatusCode() == 1001 &&
+                                resp.getMessage().equals("Invalid request")
+                )
                 .verifyComplete();
     }
 }
