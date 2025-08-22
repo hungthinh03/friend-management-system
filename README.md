@@ -202,15 +202,6 @@ Project API features:
      }
      ```
 
-     - **Emails must be different** - Returned when the request contain 2 of the same email:
-     ```json
-     { 
-         "status": "error",
-         "message": "Emails must be different",
-         "statusCode": 1009
-     }
-     ```
-
      - **You or this user has blocked the other** - Returned when either user has blocked the other:
      ```json
      { 
@@ -255,15 +246,6 @@ Project API features:
          "status": "error",
          "message": "User not found",
          "statusCode": 1002
-     }
-     ```
-
-     - **Invalid request** - Returned when the request does not contain exactly 2 emails:
-     ```json
-     { 
-         "status": "error",
-         "message": "Invalid request",
-         "statusCode": 1001
      }
      ```
 
