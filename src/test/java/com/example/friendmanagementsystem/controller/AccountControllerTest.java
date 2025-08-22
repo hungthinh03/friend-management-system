@@ -3,6 +3,7 @@ package com.example.friendmanagementsystem.controller;
 import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
+import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import com.example.friendmanagementsystem.service.AccountService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -312,6 +313,130 @@ class AccountControllerTest {
                 .expectBody()
                 .jsonPath("$.statusCode").isEqualTo(1009)
                 .jsonPath("$.message").isEqualTo("Emails must be different")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+
+    // Follow
+    @Test
+    void subscribeUpdates_success() {
+        UserConnectionDTO dto = new UserConnectionDTO("lisa@example.com", "john@example.com");
+
+        when(accountService.subscribeUpdates(dto))
+                .thenReturn(Mono.just(new ApiResponseDTO(true)));
+
+        webTestClient.post()
+                .uri("/account/follow")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true);
+    }
+
+    @Test
+    void subscribeUpdates_userNotFound() {
+        UserConnectionDTO dto = new UserConnectionDTO("ghost@example.com", "john@example.com");
+
+        when(accountService.subscribeUpdates(dto))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+
+        webTestClient.post()
+                .uri("/account/follow")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1002)
+                .jsonPath("$.message").isEqualTo("User not found")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void subscribeUpdates_sameEmail() {
+        UserConnectionDTO dto = new UserConnectionDTO("lisa@example.com", "lisa@example.com");
+
+        when(accountService.subscribeUpdates(dto))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.SAME_EMAILS)));
+
+        webTestClient.post()
+                .uri("/account/follow")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1009)
+                .jsonPath("$.message").isEqualTo("Emails must be different")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void subscribeUpdates_blocked() {
+        UserConnectionDTO dto = new UserConnectionDTO("lisa@example.com", "john@example.com");
+
+        when(accountService.subscribeUpdates(dto))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_CONNECTION_BLOCKED)));
+
+        webTestClient.post()
+                .uri("/account/follow")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1010)
+                .jsonPath("$.message").isEqualTo("You or this user has blocked the other")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void subscribeUpdates_alreadyFollowed() {
+        UserConnectionDTO dto = new UserConnectionDTO("lisa@example.com", "john@example.com");
+
+        when(accountService.subscribeUpdates(dto))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.ALREADY_FOLLOWED)));
+
+        webTestClient.post()
+                .uri("/account/follow")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1005)
+                .jsonPath("$.message").isEqualTo("User is already followed")
+                .jsonPath("$.status").isEqualTo("error");
+    }
+
+    @Test
+    void unsubscribeUpdates_success() {
+        UserConnectionDTO dto = new UserConnectionDTO("lisa@example.com", "john@example.com");
+
+        when(accountService.unsubscribeUpdates(dto))
+                .thenReturn(Mono.just(new ApiResponseDTO(true)));
+
+        webTestClient.method(HttpMethod.DELETE)
+                .uri("/account/follow")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true);
+    }
+
+    @Test
+    void unsubscribeUpdates_notFollowed() {
+        UserConnectionDTO dto = new UserConnectionDTO("lisa@example.com", "john@example.com");
+
+        when(accountService.unsubscribeUpdates(dto))
+                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.NOT_FOLLOWED)));
+
+        webTestClient.method(HttpMethod.DELETE)
+                .uri("/account/follow")
+                .bodyValue(dto)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.statusCode").isEqualTo(1006)
+                .jsonPath("$.message").isEqualTo("User is not followed")
                 .jsonPath("$.status").isEqualTo("error");
     }
 }

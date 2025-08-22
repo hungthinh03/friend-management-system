@@ -2,10 +2,13 @@ package com.example.friendmanagementsystem.service;
 
 import com.example.friendmanagementsystem.dto.AccountDTO;
 import com.example.friendmanagementsystem.dto.ApiResponseDTO;
+import com.example.friendmanagementsystem.dto.UserConnectionDTO;
 import com.example.friendmanagementsystem.model.Account;
 import com.example.friendmanagementsystem.model.Friend;
+import com.example.friendmanagementsystem.model.Follower;
 import com.example.friendmanagementsystem.repository.AccountRepository;
 import com.example.friendmanagementsystem.repository.BlockRepository;
+import com.example.friendmanagementsystem.repository.FollowerRepository;
 import com.example.friendmanagementsystem.repository.FriendRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,8 +31,8 @@ class AccountServiceTest {
     private AccountRepository accountRepo;
     @Mock
     private FriendRepository friendRepo;
-    //@Mock
-    //private FollowerRepository followerRepo;
+    @Mock
+    private FollowerRepository followerRepo;
     @Mock
     private BlockRepository blockRepo;
 
@@ -266,4 +269,121 @@ class AccountServiceTest {
                         && resp.getMessage().equals("Emails must be different"))
                 .verifyComplete();
     }
+
+    // Follow
+    @Test
+    void subscribeUpdates_success() {
+        Account lisa = new Account(1, "lisa@example.com");
+        Account john = new Account(2, "john@example.com");
+        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+
+        when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
+        when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
+        when(blockRepo.existsByBlockerIdAndBlockedId(anyInt(), anyInt())).thenReturn(Mono.just(false));
+        when(followerRepo.existsByFollowerIdAndFolloweeId(1, 2)).thenReturn(Mono.just(false));
+        when(followerRepo.save(any(Follower.class))).thenReturn(Mono.just(new Follower(1, 2)));
+
+        StepVerifier.create(accountService.subscribeUpdates(dto))
+                .expectNextMatches(resp -> resp.getSuccess() != null
+                        && resp.getSuccess())
+                .verifyComplete();
+    }
+
+    @Test
+    void subscribeUpdates_userNotFound() {
+        Account lisa = new Account(1, "lisa@example.com");
+        var dto = new UserConnectionDTO(lisa.getEmail(), "unknown@example.com");
+
+        when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
+        when(accountRepo.findByEmail("unknown@example.com")).thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.subscribeUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1002 &&
+                        resp.getMessage().equals("User not found"))
+                .verifyComplete();
+    }
+
+    @Test
+    void subscribeUpdates_sameEmails() {
+        Account lisa = new Account(1, "lisa@example.com");
+        var dto = new UserConnectionDTO(lisa.getEmail(), lisa.getEmail());
+
+        StepVerifier.create(accountService.subscribeUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1009 &&
+                        resp.getMessage().equals("Emails must be different"))
+                .verifyComplete();
+    }
+
+    @Test
+    void subscribeUpdates_blocked() {
+        Account lisa = new Account(1, "lisa@example.com");
+        Account john = new Account(2, "john@example.com");
+        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+
+        when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
+        when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
+        when(blockRepo.existsByBlockerIdAndBlockedId(anyInt(), anyInt())).thenReturn(Mono.just(true));
+        when(followerRepo.existsByFollowerIdAndFolloweeId(anyInt(), anyInt())).thenReturn(Mono.just(false));
+
+        StepVerifier.create(accountService.subscribeUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1010 &&
+                        resp.getMessage().equals("You or this user has blocked the other"))
+                .verifyComplete();
+    }
+
+    @Test
+    void subscribeUpdates_alreadyFollowed() {
+        Account lisa = new Account(1, "lisa@example.com");
+        Account john = new Account(2, "john@example.com");
+        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+
+        when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
+        when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
+        when(blockRepo.existsByBlockerIdAndBlockedId(anyInt(), anyInt())).thenReturn(Mono.just(false));
+        when(followerRepo.existsByFollowerIdAndFolloweeId(1, 2)).thenReturn(Mono.just(true));
+
+        StepVerifier.create(accountService.subscribeUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1005 &&
+                        resp.getMessage().equals("User is already followed"))
+                .verifyComplete();
+    }
+
+    @Test
+    void unsubscribeUpdates_success() {
+        Account lisa = new Account(1, "lisa@example.com");
+        Account john = new Account(2, "john@example.com");
+        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+
+        when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
+        when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
+
+        when(followerRepo.existsByFollowerIdAndFolloweeId(lisa.getUserId(), john.getUserId()))
+                .thenReturn(Mono.just(true));
+        when(followerRepo.deleteByFollowerIdAndFolloweeId(lisa.getUserId(), john.getUserId()))
+                .thenReturn(Mono.empty());
+
+        StepVerifier.create(accountService.unsubscribeUpdates(dto))
+                .expectNextMatches(resp -> resp.getSuccess() != null
+                        && resp.getSuccess())
+                .verifyComplete();
+    }
+
+    @Test
+    void unsubscribeUpdates_notFollowed() {
+        Account lisa = new Account(1, "lisa@example.com");
+        Account john = new Account(2, "john@example.com");
+        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+
+        when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
+        when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
+
+        when(followerRepo.existsByFollowerIdAndFolloweeId(lisa.getUserId(), john.getUserId()))
+                .thenReturn(Mono.just(false)); // not following
+
+        StepVerifier.create(accountService.unsubscribeUpdates(dto))
+                .expectNextMatches(resp -> resp.getStatusCode() == 1006
+                        && resp.getMessage().equals("User is not followed"))
+                .verifyComplete();
+    }
 }
+
