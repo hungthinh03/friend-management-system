@@ -358,7 +358,7 @@ This will start:
 
 2. **API Testing**
 
-Use the included Postman collection to test the API endpoints with the predefined requests. Postman collection: [FriendManagementSystem.postman_collection.json](./postman/FriendManagementSystem.postman_collection.json)
+Use the included Postman collection to test the API endpoints with the predefined requests. Postman collection: [FriendManagementAPI.postman_collection.json](./postman/FriendManagementSystem.postman_collection.json)
 
 
 
