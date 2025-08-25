@@ -5,7 +5,7 @@
 -- Dumped from database version 17.5
 -- Dumped by pg_dump version 17.5
 
--- Started on 2025-08-19 16:09:01
+-- Started on 2025-08-25 09:41:52
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -122,7 +122,6 @@ COPY public.block (blocker_id, blocked_id) FROM stdin;
 --
 
 COPY public.follower (follower_id, followee_id) FROM stdin;
-1	2
 \.
 
 
@@ -133,8 +132,6 @@ COPY public.follower (follower_id, followee_id) FROM stdin;
 --
 
 COPY public.friend (user_id1, user_id2) FROM stdin;
-2	3
-1	2
 \.
 
 
@@ -237,7 +234,7 @@ ALTER TABLE ONLY public.friend
     ADD CONSTRAINT fk_friend_user2 FOREIGN KEY (user_id2) REFERENCES public.account(user_id) ON DELETE CASCADE;
 
 
--- Completed on 2025-08-19 16:09:01
+-- Completed on 2025-08-25 09:41:53
 
 --
 -- PostgreSQL database dump complete
