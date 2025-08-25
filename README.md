@@ -343,7 +343,26 @@ The system will use a relational database with the following core tables:
 
 SQL Script to recreate the database: [schema.sql](./sql/frienddb.sql)
 
-## 5. Technical Specifications
+## 5. Setup & Testing
+
+1. **Start the Application**
+
+Run the following command in the project root to start both the application and database:
+
+```bash
+docker compose up
+```
+This will start:
+- **friendapp** - Spring Boot application on port 8080
+- **frienddb** - PostgreSQL database on port 5432
+
+2. **API Testing**
+
+Use the included Postman collection to test the API endpoints with the predefined requests. Postman collection: [FriendManagementAPI.postman_collection.json](./postman/FriendManagementAPI.postman_collection.json)
+
+
+
+## 6. Technical Specifications
 - **Architecture:** RESTful API.
 - **Data Format:** JSON for all requests and responses.
 - **Persistence:** Relational database (PostgreSQL).
