@@ -2,12 +2,13 @@ pipeline {
     agent any
 
     stages {
-        stage('Checkout and Clean') {
+        // Stage 1: Checkout repository and ensure clean workspace
+        stage('Checkout & Clean') {
             steps {
-                // Checkout repo
-                checkout scm
+                // Clone the repo explicitly
+                git branch: 'master', url: 'https://github.com/hungthinh03/friend-management-system.git'
 
-                // Ensure workspace is clean and up-to-date
+                // Ensure workspace is clean (remove leftover files)
                 script {
                     sh 'git reset --hard'
                     sh 'git clean -fd'
@@ -15,6 +16,7 @@ pipeline {
             }
         }
 
+        // Stage 2: Redeploy Docker containers
         stage('Redeploy with Docker Compose') {
             steps {
                 script {
