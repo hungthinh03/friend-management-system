@@ -1,13 +1,16 @@
 pipeline {
     agent any
+
     stages {
-        stage('Update Code') {
+        stage('Checkout and Clean') {
             steps {
+                // Checkout repo
+                checkout scm
+
+                // Ensure workspace is clean and up-to-date
                 script {
-                    // Ensure up-to-date
                     sh 'git reset --hard'
                     sh 'git clean -fd'
-                    sh 'git pull origin master'
                 }
             }
         }
@@ -17,8 +20,9 @@ pipeline {
                 script {
                     // Stop and remove old containers
                     sh 'docker-compose -f compose.yml down'
-                    // Build images and start containers (force rebuild)
-                    sh 'docker-compose -f compose.yml up -d --build --no-cache'
+
+                    // Build and start containers
+                    sh 'docker-compose -f compose.yml up -d --build'
                 }
             }
         }
