@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        COMPOSE_PROJECT_NAME = "${env.JOB_NAME}-${env.BUILD_ID}"
+        WORKSPACE = "${env.WORKSPACE}"  // Jenkins workspace
+        DOCKER_PROJECT = "friend-management-system"  // fixed project name
     }
 
     stages {
@@ -16,17 +17,14 @@ pipeline {
         stage('Redeploy with Docker Compose') {
             steps {
                 script {
-                    // Export the WORKSPACE variable for use in docker-compose
-                    sh "export WORKSPACE=${env.WORKSPACE}"
-
-                    // Stop and remove old containers
-                    sh 'docker-compose -f compose.yml down -v'
+                    // Stop and remove old containers + volumes
+                    sh "docker-compose -f compose.yml -p ${DOCKER_PROJECT} down -v"
 
                     // Build images without cache
-                    sh 'docker-compose -f compose.yml build --no-cache'
+                    sh "docker-compose -f compose.yml -p ${DOCKER_PROJECT} build --no-cache"
 
                     // Start containers
-                    sh 'docker-compose -f compose.yml up -d'
+                    sh "docker-compose -f compose.yml -p ${DOCKER_PROJECT} up -d"
                 }
             }
         }
