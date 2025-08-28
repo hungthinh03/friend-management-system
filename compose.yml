@@ -10,7 +10,7 @@ services:
     volumes:
       - ./sql/frienddb.sql:/docker-entrypoint-initdb.d/frienddb.sql
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   app:
     image: friend-management-system:latest
