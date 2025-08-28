@@ -1,10 +1,13 @@
 pipeline {
     agent any
 
+    environment {
+        COMPOSE_PROJECT_NAME = "${env.JOB_NAME}-${env.BUILD_ID}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                // Clean workspace and pull fresh code
                 cleanWs()
                 checkout scm
             }
@@ -13,7 +16,10 @@ pipeline {
         stage('Redeploy with Docker Compose') {
             steps {
                 script {
-                    // Stop containers and remove volumes to reinitialize DB
+                    // Export the WORKSPACE variable for use in docker-compose
+                    sh "export WORKSPACE=${env.WORKSPACE}"
+
+                    // Stop and remove old containers
                     sh 'docker-compose -f compose.yml down -v'
 
                     // Build images without cache
@@ -24,6 +30,5 @@ pipeline {
                 }
             }
         }
-
     }
 }
