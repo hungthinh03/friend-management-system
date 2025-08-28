@@ -13,8 +13,8 @@ pipeline {
         stage('Redeploy with Docker Compose') {
             steps {
                 script {
-                    // Stop and remove old containers
-                    sh 'docker-compose -f compose.yml down'
+                    // Stop containers and remove volumes to reinitialize DB
+                    sh 'docker-compose -f compose.yml down -v'
 
                     // Build images without cache
                     sh 'docker-compose -f compose.yml build --no-cache'
