@@ -1,14 +1,12 @@
 pipeline {
     agent any
+
     stages {
-        stage('Update Code') {
+        stage('Checkout') {
             steps {
-                script {
-                    // Ensure workspace is clean and up-to-date
-                    sh 'git reset --hard'
-                    sh 'git clean -fd'
-                    sh 'git pull origin master'
-                }
+                // Clean workspace and pull fresh code
+                cleanWs()
+                checkout scm
             }
         }
 
