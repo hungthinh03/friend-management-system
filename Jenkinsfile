@@ -15,10 +15,15 @@ pipeline {
                 script {
                     // Stop and remove old containers
                     sh 'docker-compose -f compose.yml down'
-                    // Build images and start containers (force rebuild)
-                    sh 'docker-compose -f compose.yml up -d --build --no-cache'
+
+                    // Build images without cache
+                    sh 'docker-compose -f compose.yml build --no-cache'
+
+                    // Start containers
+                    sh 'docker-compose -f compose.yml up -d'
                 }
             }
         }
+
     }
 }
