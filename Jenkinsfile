@@ -1,0 +1,15 @@
+pipeline {
+    agent any
+    stages {
+        stage('Redeploy with Docker Compose') {
+            steps {
+                script {
+                    // Stop and remove old containers
+                    sh 'docker-compose -f compose.yml down'
+                    // Build and start containers
+                    sh 'docker-compose -f compose.yml up -d --build'
+                }
+            }
+        }
+    }
+}

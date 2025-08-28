@@ -11,6 +11,8 @@ import java.util.List;
 public interface AccountService {
     Mono<List<String>>  getAllEmails();
 
+    Mono<ApiResponseDTO> deleteAccount(AccountDTO dto);
+
     //
     Mono<ApiResponseDTO> addFriend(AccountDTO dto);
     Mono<ApiResponseDTO> removeFriend(AccountDTO dto);

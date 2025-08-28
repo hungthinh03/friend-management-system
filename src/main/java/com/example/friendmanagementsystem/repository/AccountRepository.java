@@ -13,4 +13,6 @@ public interface AccountRepository extends ReactiveCrudRepository<Account, Integ
 
     @Query("SELECT email FROM account")
     Flux<String> findAllEmails();
+
+    Mono<Void> deleteAccountByEmail(String email);
 }

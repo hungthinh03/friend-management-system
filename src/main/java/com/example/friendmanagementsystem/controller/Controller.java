@@ -22,6 +22,12 @@ public class Controller {
         return service.getAllEmails();
     }
 
+    @DeleteMapping("/delete")
+    public Mono<ApiResponseDTO> deleteAccount(@RequestBody AccountDTO dto) {
+        return service.deleteAccount(dto);
+    }
+
+
     // Add friend
     @PostMapping
     public Mono<ApiResponseDTO> addFriend(@RequestBody AccountDTO dto) {

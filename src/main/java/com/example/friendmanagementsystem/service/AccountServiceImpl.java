@@ -21,6 +21,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -38,6 +39,17 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Mono<List<String>> getAllEmails() {
         return accountRepo.findAllEmails().collectList();
+    }
+
+    @Override
+    public Mono<ApiResponseDTO> deleteAccount(AccountDTO dto) {
+        return accountRepo.findByEmail(dto.getEmail())
+                .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
+                .flatMap(account -> accountRepo.deleteAccountByEmail((account.getEmail())))
+                .thenReturn(new ApiResponseDTO(true))
+                .onErrorResume(AppException.class, e ->
+                    Mono.just(new ApiResponseDTO(e.getErrorCode()))
+        );
     }
 
     // Helper
@@ -64,10 +76,12 @@ public class AccountServiceImpl implements AccountService {
                 .then(); // returns void instead of Mono<Boolean>
     }
 
+
+
     @Override
     public Mono<ApiResponseDTO> addFriend(AccountDTO dto) {
         return Mono.justOrEmpty(dto.getFriends())
-                .filter(list -> list != null && list.size() == 2) // Must have exactly 2 emails
+                .filter(list -> Objects.nonNull(list) && list.size() == 2) // Must have exactly 2 emails
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
                 .flatMap(list -> validateAndFetchAccounts(list.getFirst(), list.get(1))) // Helper
                 .flatMap(tuple -> { // order (smaller_id, bigger_id)
@@ -259,7 +273,7 @@ public class AccountServiceImpl implements AccountService {
                             Integer senderId = sender.getUserId();
                             String senderEmail = sender.getEmail();
 
-                            return Flux.merge(
+                            return Flux.merge (
                                             friendRepo.findAllFriendIdsByUserId(senderId).flatMap(accountRepo::findById),
                                             followerRepo.findByFolloweeId(senderId).flatMap(accountRepo::findById),
                                             Flux.fromIterable(validDto.extractEmails()).flatMap(accountRepo::findByEmail)

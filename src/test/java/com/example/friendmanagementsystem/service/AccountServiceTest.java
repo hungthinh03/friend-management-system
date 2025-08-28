@@ -98,7 +98,7 @@ class AccountServiceTest {
     @Test
     void addFriend_alreadyFriends() { //Already friends
         var acc1 = new Account(1, "a@example.com");
-        var acc2 = new Account(2, "b@example.com");
+        var acc2 = new Account(2, "b@example.com"); //var
         var dto = new AccountDTO();
         dto.setFriends(List.of(acc1.getEmail(), acc2.getEmail()));
 
@@ -115,9 +115,9 @@ class AccountServiceTest {
 
     @Test
     void addFriend_blockedUsers() {
-        var acc1 = new Account(1, "a@example.com");
-        var acc2 = new Account(2, "b@example.com");
-        var dto = new AccountDTO();
+        Account acc1 = new Account(1, "a@example.com");
+        Account acc2 = new Account(2, "b@example.com"); //No var
+        AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of(acc1.getEmail(), acc2.getEmail()));
 
         when(accountRepo.findByEmail(acc1.getEmail())).thenReturn(Mono.just(acc1));
