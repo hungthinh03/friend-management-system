@@ -9,7 +9,8 @@ services:
       POSTGRES_PASSWORD: 12345678
       POSTGRES_DB: FriendDB
     volumes:
-      - ./sql:/docker-entrypoint-initdb.d   # mount entire folder
+      - frienddb_data:/var/lib/postgresql/data       # persistent DB data
+      - ./sql:/docker-entrypoint-initdb.d           # init scripts
     ports:
       - "5432:5432"
     healthcheck:
@@ -29,3 +30,6 @@ services:
       SPRING_R2DBC_PASSWORD: 12345678
     ports:
       - "8081:8080"
+
+volumes:
+  frienddb_data:

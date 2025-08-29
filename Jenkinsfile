@@ -14,15 +14,21 @@ pipeline {
 
         stage('Build Gradle') {
             steps {
-                sh 'chmod +x ./gradlew'       // make gradlew executable
+                sh 'chmod +x ./gradlew'          // make gradlew executable
                 sh './gradlew clean build -x test'
             }
         }
 
-
         stage('Build Docker Images') {
             steps {
                 sh "docker-compose -f ${DOCKER_COMPOSE_FILE} build"
+            }
+        }
+
+        stage('Recreate DB') {
+            steps {
+                // Stop containers and remove volumes to force fresh DB
+                sh "docker-compose -f ${DOCKER_COMPOSE_FILE} down -v || true"
             }
         }
 
@@ -37,9 +43,9 @@ pipeline {
                 script {
                     // Wait until DB is healthy
                     sh """
-                    RETRIES=5
+                    RETRIES=10
                     until docker inspect --format='{{.State.Health.Status}}' frienddb | grep -q "healthy" || [ \$RETRIES -eq 0 ]; do
-                        echo "Waiting for DB..."
+                        echo "Waiting for DB to become healthy..."
                         sleep 5
                         RETRIES=\$((RETRIES-1))
                     done
@@ -57,7 +63,6 @@ pipeline {
             echo "Build failed."
         }
         always {
-            // Optional: show running containers
             sh "docker ps"
         }
     }
