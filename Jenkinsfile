@@ -14,20 +14,25 @@ pipeline {
             }
         }
 
-        stage('Prepare SQL Scripts') {
+        stage('Prepare SQL Folder') {
             steps {
                 sh '''
-                if [ ! -f ./sql/frienddb.sql ]; then
-                    echo "ERROR: SQL file not found!"
-                    exit 1
-                fi
+                echo "==> Cleaning and preparing ./sql folder"
+                rm -rf ./sql
+                mkdir -p ./sql
+
+                echo "==> Copying SQL script"
+                cp ./sql_repo/frienddb.sql ./sql/
+
+                echo "==> Contents of ./sql folder:"
+                ls -l ./sql
                 '''
             }
         }
 
         stage('Build Gradle') {
             steps {
-                sh 'chmod +x ./gradlew'      // execute permission
+                sh 'chmod +x ./gradlew'
                 sh './gradlew clean build -x test'
             }
         }
