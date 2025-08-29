@@ -22,7 +22,7 @@ pipeline {
                 mkdir -p ./sql
 
                 echo "==> Copying SQL script"
-                cp ./sql_repo/frienddb.sql ./sql/
+                cp ./sql/frienddb.sql ./sql/
 
                 echo "==> Contents of ./sql folder:"
                 ls -l ./sql
