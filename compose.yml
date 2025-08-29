@@ -9,13 +9,16 @@ services:
       POSTGRES_PASSWORD: 12345678
       POSTGRES_DB: FriendDB
     volumes:
-      - type: volume
-        source: frienddb_data
-        target: /var/lib/postgresql/data
-      - type: bind
-        source: ./sql/frienddb.sql
-        target: /docker-entrypoint-initdb.d/frienddb.sql
-        read_only: true
+      - frienddb_data:/var/lib/postgresql/data       # persistent DB data
+      - ./sql:/docker-entrypoint-initdb.d           # init scripts
+
+      #- type: volume
+      #  source: frienddb_data
+      #  target: /var/lib/postgresql/data
+      #- type: bind
+      #  source: ./sql/frienddb.sql
+      #  target: /docker-entrypoint-initdb.d/frienddb.sql
+      #  read_only: true
     ports:
       - "5432:5432"
     healthcheck:
