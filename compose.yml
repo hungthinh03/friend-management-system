@@ -39,5 +39,5 @@ services:
     ports:
       - "8081:8080"
 
-volumes:
-  frienddb_data:
+#volumes:
+#  frienddb_data:
