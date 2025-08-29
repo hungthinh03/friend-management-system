@@ -21,20 +21,13 @@ pipeline {
             }
         }
 
-        stage('Debug SQL Scripts') {
-            steps {
-                echo 'Listing SQL scripts inside the DB container mount:'
-                sh '''
-                docker run --rm -v $PWD/sql:/docker-entrypoint-initdb.d alpine ls -l /docker-entrypoint-initdb.d
-                '''
-            }
-        }
-
         stage('Prepare SQL Scripts') {
             steps {
                 sh '''
-                rm -rf ./sql/frienddb.sql
-                mv ./sql/frienddb/*.sql ./sql/frienddb.sql
+                # Ensure frienddb.sql is a file, not a folder
+                if [ -d ./sql/frienddb.sql ]; then
+                    rm -rf ./sql/frienddb.sql
+                fi
                 '''
             }
         }
@@ -53,7 +46,7 @@ pipeline {
 
         stage('Health Check') {
             steps {
-                echo 'Health check skipped (depends on previous stages)'
+                sh 'docker ps'
             }
         }
     }
@@ -61,7 +54,6 @@ pipeline {
     post {
         always {
             sh 'docker ps'
-            echo 'Build finished.'
         }
     }
 }
