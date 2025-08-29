@@ -1,9 +1,9 @@
 pipeline {
     agent any
-
     environment {
         DOCKER_PROJECT = "friend-management-system"
         WORKSPACE_DIR = "${env.WORKSPACE}"
+        SQL_DIR = "${WORKSPACE_DIR}/sql"
     }
 
     stages {
@@ -22,13 +22,12 @@ pipeline {
         stage('Verify SQL folder') {
             steps {
                 script {
-                    if (fileExists("${WORKSPACE_DIR}/sql")) {
-                        echo ">>> Local SQL folder contents:"
-                        sh "ls -l ${WORKSPACE_DIR}/sql"
-                        env.SQL_EXISTS = "true"
-                    } else {
+                    if (!fileExists(SQL_DIR)) {
                         echo ">>> SQL folder not found, skipping SQL cleanup"
-                        env.SQL_EXISTS = "false"
+                        env.SKIP_SQL_CLEAN = "true"
+                    } else {
+                        env.SKIP_SQL_CLEAN = "false"
+                        sh "ls -l ${SQL_DIR}"
                     }
                 }
             }
@@ -36,31 +35,37 @@ pipeline {
 
         stage('Clean SQL mount') {
             when {
-                expression { env.SQL_EXISTS == "true" }
+                expression { env.SKIP_SQL_CLEAN == "false" }
             }
             steps {
                 echo ">>> Ensuring SQL folder only contains valid files"
-                sh "find ${WORKSPACE_DIR}/sql -mindepth 1 -type d -exec rm -rf {} +"
+                sh "find ${SQL_DIR} -mindepth 1 -type d -exec rm -rf {} +"
             }
         }
 
         stage('Build Java app') {
             steps {
                 dir("${WORKSPACE_DIR}") {
-                    sh "chmod +x gradlew"
-                    sh "./gradlew clean build -x test"
+                    script {
+                        if (fileExists("${WORKSPACE_DIR}/gradlew")) {
+                            sh "chmod +x gradlew"
+                            sh "./gradlew clean build -x test"
+                        } else {
+                            error "gradlew not found! Commit gradlew to repository."
+                        }
+                    }
                 }
             }
         }
 
         stage('Clean old containers and volumes') {
             steps {
-                echo ">>> Removing old containers and volumes"
-                sh """
-                    docker-compose -f compose.yml down -v || true
-                    docker ps -a -q --filter name=${DOCKER_PROJECT}-* | xargs -r docker rm -f || true
-                    docker volume prune -f || true
-                """
+                script {
+                    echo ">>> Removing old containers"
+                    sh 'docker rm -f $(docker ps -a -q --filter name=${DOCKER_PROJECT}-* || true) || true'
+                    echo ">>> Removing unused volumes"
+                    sh 'docker volume prune -f'
+                }
             }
         }
 
@@ -74,14 +79,11 @@ pipeline {
         }
 
         stage('Verify DB tables') {
-            when {
-                expression { env.SQL_EXISTS == "true" }
-            }
             steps {
-                echo ">>> Checking database tables..."
-                sh """
-                    docker exec -it frienddb psql -U postgres -d FriendDB -c "\\dt" || echo "No tables found"
-                """
+                script {
+                    echo ">>> Checking database tables"
+                    sh "docker exec -it ${DOCKER_PROJECT}-db psql -U postgres -d FriendDB -c '\\dt'"
+                }
             }
         }
     }
