@@ -13,16 +13,9 @@ pipeline {
             }
         }
 
-        stage('Debug Workspace') {
+        stage('Verify SQL folder') {
             steps {
-                script {
-                    echo ">>> Jenkins WORKSPACE = ${env.WORKSPACE}"
-                    sh "pwd"
-                    sh "ls -l"
-                    sh "ls -l ${env.WORKSPACE}"
-                    sh "ls -l ${env.WORKSPACE}/sql || echo 'sql folder not found!'"
-                    sh "ls -l ${env.WORKSPACE}/sql/frienddb.sql || echo 'frienddb.sql not found!'"
-                }
+                sh "ls -l ${env.WORKSPACE}/sql"
             }
         }
 
@@ -31,11 +24,28 @@ pipeline {
                 script {
                     dir(env.WORKSPACE) {
                         withEnv(["COMPOSE_PROJECT_NAME=${DOCKER_PROJECT}"]) {
-                            echo ">>> Running docker-compose from: ${pwd()}"
-                            sh "docker-compose -f compose.yml config"  // dump resolved config
-                            sh "docker-compose -f compose.yml down -v"
-                            sh "docker-compose -f compose.yml build --no-cache"
-                            sh "docker-compose -f compose.yml up -d"
+                            try {
+                                sh "docker-compose -f compose.yml down -v"
+                                sh "docker-compose -f compose.yml build --no-cache"
+                                sh "docker-compose -f compose.yml up -d"
+                            } catch (err) {
+                                echo '>>> Containers failed to start, showing logs...'
+                                sh "docker-compose -f compose.yml logs --tail=100"
+                                throw err
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Inspect DB init folder') {
+            steps {
+                script {
+                    dir(env.WORKSPACE) {
+                        withEnv(["COMPOSE_PROJECT_NAME=${DOCKER_PROJECT}"]) {
+                            echo '>>> Checking contents of /docker-entrypoint-initdb.d inside db container...'
+                            sh "docker-compose -f compose.yml run --rm db ls -l /docker-entrypoint-initdb.d/"
                         }
                     }
                 }
