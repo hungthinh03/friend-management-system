@@ -36,10 +36,10 @@ pipeline {
 
         stage('Recreate DB') {
             steps {
-                // Stop containers and remove old volumes
-                sh 'docker-compose -f compose.yml down -v'
+                // Stop and remove containers
+                sh 'docker-compose -f compose.yml down'
 
-                // Remove the Docker volume explicitly
+                // Remove old volume to force DB re-initialization
                 sh 'docker volume rm frienddb_data || true'
             }
         }
