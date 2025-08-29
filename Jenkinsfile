@@ -15,7 +15,6 @@ pipeline {
 
         stage('Verify SQL folder') {
             steps {
-                echo '>>> Local SQL folder contents:'
                 sh "ls -l ${env.WORKSPACE}/sql"
             }
         }
@@ -23,10 +22,7 @@ pipeline {
         stage('Clean SQL mount') {
             steps {
                 echo '>>> Ensuring SQL folder only contains valid files'
-                sh """
-                    # Remove any directories inside the SQL folder
-                    find ${env.WORKSPACE}/sql -mindepth 1 -type d -exec rm -rf {} +
-                """
+                sh "find ${env.WORKSPACE}/sql -mindepth 1 -type d -exec rm -rf {} +"
             }
         }
 
@@ -39,23 +35,29 @@ pipeline {
             }
         }
 
-        stage('Redeploy with Docker Compose') {
+        stage('Clean old Docker containers & volumes') {
             steps {
                 script {
-                    dir(env.WORKSPACE) {
-                        withEnv(["COMPOSE_PROJECT_NAME=${DOCKER_PROJECT}"]) {
-                            try {
-                                // Ensure old containers and named volumes are removed
-                                sh "docker-compose -f compose.yml down -v"
-                                // Optional: prune any unused volumes to avoid conflicts
-                                sh "docker volume prune -f || true"
-                                sh "docker-compose -f compose.yml build --no-cache"
-                                sh "docker-compose -f compose.yml up -d"
-                            } catch (err) {
-                                echo '>>> Containers failed to start, showing logs...'
-                                sh "docker-compose -f compose.yml logs --tail=100"
-                                throw err
-                            }
+                    echo '>>> Removing any old containers'
+                    sh "docker rm -f $(docker ps -a -q --filter name=${DOCKER_PROJECT}-* || true) || true"
+                    echo '>>> Removing any old volumes'
+                    sh "docker volume rm -f $(docker volume ls -q --filter name=${DOCKER_PROJECT}-* || true) || true"
+                }
+            }
+        }
+
+        stage('Redeploy with Docker Compose') {
+            steps {
+                dir(env.WORKSPACE) {
+                    withEnv(["COMPOSE_PROJECT_NAME=${DOCKER_PROJECT}"]) {
+                        try {
+                            sh "docker-compose -f compose.yml down -v"
+                            sh "docker-compose -f compose.yml build --no-cache"
+                            sh "docker-compose -f compose.yml up -d"
+                        } catch (err) {
+                            echo '>>> Containers failed to start, showing logs...'
+                            sh "docker-compose -f compose.yml logs --tail=100"
+                            throw err
                         }
                     }
                 }
@@ -64,12 +66,10 @@ pipeline {
 
         stage('Inspect DB init folder (optional)') {
             steps {
-                script {
-                    dir(env.WORKSPACE) {
-                        withEnv(["COMPOSE_PROJECT_NAME=${DOCKER_PROJECT}"]) {
-                            echo '>>> Checking contents of /docker-entrypoint-initdb.d inside db container...'
-                            sh "docker-compose -f compose.yml run --rm db ls -l /docker-entrypoint-initdb.d/"
-                        }
+                dir(env.WORKSPACE) {
+                    withEnv(["COMPOSE_PROJECT_NAME=${DOCKER_PROJECT}"]) {
+                        echo '>>> Checking contents of /docker-entrypoint-initdb.d inside db container...'
+                        sh "docker-compose -f compose.yml run --rm db ls -l /docker-entrypoint-initdb.d/"
                     }
                 }
             }
