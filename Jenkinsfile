@@ -27,7 +27,8 @@ pipeline {
 
         stage('Build Gradle') {
             steps {
-                sh './gradlew clean build -x test'  // build the JAR first
+                sh 'chmod +x ./gradlew'      // execute permission
+                sh './gradlew clean build -x test'
             }
         }
 
