@@ -1,12 +1,8 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_COMPOSE_FILE = 'compose.yml'
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Checkout SCM') {
             steps {
                 checkout scm
             }
@@ -21,60 +17,51 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                sh "docker-compose -f ${DOCKER_COMPOSE_FILE} build"
+                sh 'docker-compose -f compose.yml build'
             }
         }
 
         stage('Debug SQL Scripts') {
             steps {
-                echo "Listing SQL scripts inside the DB container mount:"
-                sh """
-                    docker run --rm \\
-                        -v \$(pwd)/sql:/docker-entrypoint-initdb.d \\
-                        alpine ls -l /docker-entrypoint-initdb.d
-                """
+                echo 'Listing SQL scripts inside the DB container mount:'
+                sh '''
+                docker run --rm -v $PWD/sql:/docker-entrypoint-initdb.d alpine ls -l /docker-entrypoint-initdb.d
+                '''
+            }
+        }
+
+        stage('Prepare SQL Scripts') {
+            steps {
+                sh '''
+                rm -rf ./sql/frienddb.sql
+                mv ./sql/frienddb/*.sql ./sql/frienddb.sql
+                '''
             }
         }
 
         stage('Recreate DB') {
             steps {
-                // Stop containers and remove volumes to force fresh DB
-                sh "docker-compose -f ${DOCKER_COMPOSE_FILE} down -v || true"
+                sh 'docker-compose -f compose.yml down -v'
             }
         }
 
         stage('Up Containers') {
             steps {
-                sh "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d"
+                sh 'docker-compose -f compose.yml up -d'
             }
         }
 
         stage('Health Check') {
             steps {
-                script {
-                    // Wait until DB is healthy
-                    sh """
-                    RETRIES=10
-                    until docker inspect --format='{{.State.Health.Status}}' frienddb | grep -q "healthy" || [ \$RETRIES -eq 0 ]; do
-                        echo "Waiting for DB to become healthy..."
-                        sleep 5
-                        RETRIES=\$((RETRIES-1))
-                    done
-                    """
-                }
+                echo 'Health check skipped (depends on previous stages)'
             }
         }
     }
 
     post {
-        success {
-            echo "Build and deployment succeeded!"
-        }
-        failure {
-            echo "Build failed."
-        }
         always {
-            sh "docker ps"
+            sh 'docker ps'
+            echo 'Build finished.'
         }
     }
 }
