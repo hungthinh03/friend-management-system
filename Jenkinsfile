@@ -31,18 +31,6 @@ pipeline {
             }
         }
 
-        stage('Prepare SQL Scripts') {
-            steps {
-                // Just check that the SQL file exists; no moving or renaming needed
-                sh '''
-                if [ ! -f ./sql/frienddb.sql ]; then
-                    echo "ERROR: SQL file not found!"
-                    exit 1
-                fi
-                '''
-            }
-        }
-
         stage('Recreate DB') {
             steps {
                 sh 'docker-compose -f compose.yml down -v'
