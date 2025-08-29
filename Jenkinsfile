@@ -14,9 +14,11 @@ pipeline {
 
         stage('Build Gradle') {
             steps {
-                sh './gradlew clean build -x test'  // build jar
+                sh 'chmod +x ./gradlew'       // make gradlew executable
+                sh './gradlew clean build -x test'
             }
         }
+
 
         stage('Build Docker Images') {
             steps {
