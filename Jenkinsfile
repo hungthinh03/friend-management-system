@@ -23,6 +23,13 @@ pipeline {
             }
         }
 
+        stage('Verify SQL file') {
+            steps {
+                sh 'ls -l ./sql'
+                sh 'head -n 5 ./sql/frienddb.sql'
+            }
+        }
+
         stage('Build Gradle') {
             steps {
                 sh 'chmod +x ./gradlew'
