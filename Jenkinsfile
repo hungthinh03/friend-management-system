@@ -40,7 +40,7 @@ pipeline {
 
         stage('Up Containers') {
             steps {
-                sh 'docker-compose -f compose.yml up -d'
+                sh 'docker-compose -f compose.yml up --abort-on-container-exit'
             }
         }
 
