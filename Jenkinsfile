@@ -2,16 +2,26 @@ pipeline {
     agent any
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()  // wipes the entire workspace
+            }
+        }
+
         stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Build Gradle') {
+        stage('Prepare SQL Scripts') {
             steps {
-                sh 'chmod +x ./gradlew'
-                sh './gradlew clean build -x test'
+                sh '''
+                if [ ! -f ./sql/frienddb.sql ]; then
+                    echo "ERROR: SQL file not found!"
+                    exit 1
+                fi
+                '''
             }
         }
 
