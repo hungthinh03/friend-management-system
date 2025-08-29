@@ -19,6 +19,14 @@ pipeline {
             }
         }
 
+        stage('Build Java app') {
+            steps {
+                dir(env.WORKSPACE) {
+                    sh "./gradlew clean build -x test"   // build app jar
+                }
+            }
+        }
+
         stage('Redeploy with Docker Compose') {
             steps {
                 script {
@@ -39,7 +47,7 @@ pipeline {
             }
         }
 
-        stage('Inspect DB init folder') {
+        stage('Inspect DB init folder (optional)') {
             steps {
                 script {
                     dir(env.WORKSPACE) {
