@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        WORKSPACE = "${env.WORKSPACE}"  // Jenkins workspace
-        DOCKER_PROJECT = "friend-management-system"  // fixed project name
+        DOCKER_PROJECT = "friend-management-system"  // project name for docker compose
     }
 
     stages {
@@ -14,17 +13,22 @@ pipeline {
             }
         }
 
+        stage('Verify SQL file') {
+            steps {
+                sh "ls -l ${env.WORKSPACE}/sql/"
+            }
+        }
+
         stage('Redeploy with Docker Compose') {
             steps {
                 script {
-                    // Stop and remove old containers + volumes
-                    sh "docker-compose -f compose.yml -p ${DOCKER_PROJECT} down -v"
-
-                    // Build images without cache
-                    sh "docker-compose -f compose.yml -p ${DOCKER_PROJECT} build --no-cache"
-
-                    // Start containers
-                    sh "docker-compose -f compose.yml -p ${DOCKER_PROJECT} up -d"
+                    dir(env.WORKSPACE) {
+                        withEnv(["COMPOSE_PROJECT_NAME=${DOCKER_PROJECT}"]) {
+                            sh "docker-compose -f compose.yml down -v"
+                            sh "docker-compose -f compose.yml build --no-cache"
+                            sh "docker-compose -f compose.yml up -d"
+                        }
+                    }
                 }
             }
         }
