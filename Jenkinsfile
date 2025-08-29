@@ -17,14 +17,7 @@ pipeline {
         stage('Prepare SQL Folder') {
             steps {
                 sh '''
-                echo "==> Cleaning and preparing ./sql folder"
-                rm -rf ./sql
-                mkdir -p ./sql
-
-                echo "==> Copying SQL script"
-                cp ./sql/frienddb.sql ./sql/
-
-                echo "==> Contents of ./sql folder:"
+                echo "==> Listing contents of ./sql folder"
                 ls -l ./sql
                 '''
             }
