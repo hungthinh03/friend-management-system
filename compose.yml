@@ -13,7 +13,7 @@ services:
         source: frienddb_data
         target: /var/lib/postgresql/data
       - type: bind
-        source: ./sql/frienddb.sql
+        source: ${PWD}/sql/frienddb.sql
         target: /docker-entrypoint-initdb.d/frienddb.sql
         read_only: true
     ports:
