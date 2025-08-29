@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Clean Workspace') {
             steps {
-                deleteDir()  // wipes the entire workspace
+                deleteDir()
             }
         }
 
@@ -43,20 +43,6 @@ pipeline {
         stage('Up Containers') {
             steps {
                 sh 'docker-compose -f compose.yml up -d'
-            }
-        }
-
-        stage('Run SQL Script') {
-            steps {
-                sh '''
-                echo "==> Waiting for DB to be healthy..."
-                until [ "$(docker inspect -f '{{.State.Health.Status}}' frienddb)" == "healthy" ]; do
-                    sleep 2
-                done
-
-                echo "==> Executing SQL script inside DB container"
-                docker exec -i frienddb psql -U postgres -d FriendDB < ./sql/frienddb.sql
-                '''
             }
         }
 
