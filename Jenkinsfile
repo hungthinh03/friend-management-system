@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         DOCKER_PROJECT = "friend-management-system"
+        WORKSPACE_DIR = "${env.WORKSPACE}"
     }
 
     stages {
-
         stage('Checkout SCM') {
             steps {
                 checkout scm
@@ -21,21 +21,32 @@ pipeline {
 
         stage('Verify SQL folder') {
             steps {
-                echo ">>> Local SQL folder contents:"
-                sh "ls -l ${WORKSPACE}/sql"
+                script {
+                    if (fileExists("${WORKSPACE_DIR}/sql")) {
+                        echo ">>> Local SQL folder contents:"
+                        sh "ls -l ${WORKSPACE_DIR}/sql"
+                        env.SQL_EXISTS = "true"
+                    } else {
+                        echo ">>> SQL folder not found, skipping SQL cleanup"
+                        env.SQL_EXISTS = "false"
+                    }
+                }
             }
         }
 
         stage('Clean SQL mount') {
+            when {
+                expression { env.SQL_EXISTS == "true" }
+            }
             steps {
                 echo ">>> Ensuring SQL folder only contains valid files"
-                sh 'find ${WORKSPACE}/sql -mindepth 1 -type d -exec rm -rf {} +'
+                sh "find ${WORKSPACE_DIR}/sql -mindepth 1 -type d -exec rm -rf {} +"
             }
         }
 
         stage('Build Java app') {
             steps {
-                dir("${WORKSPACE}") {
+                dir("${WORKSPACE_DIR}") {
                     sh "chmod +x gradlew"
                     sh "./gradlew clean build -x test"
                 }
@@ -44,29 +55,33 @@ pipeline {
 
         stage('Clean old containers and volumes') {
             steps {
-                script {
-                    echo ">>> Stopping and removing old containers and volumes"
-                    sh 'docker-compose -f compose.yml down -v || true'
-                    sh 'docker volume prune -f || true'
-                }
+                echo ">>> Removing old containers and volumes"
+                sh """
+                    docker-compose -f compose.yml down -v || true
+                    docker ps -a -q --filter name=${DOCKER_PROJECT}-* | xargs -r docker rm -f || true
+                    docker volume prune -f || true
+                """
             }
         }
 
         stage('Build and redeploy with Docker Compose') {
             steps {
-                script {
-                    dir("${WORKSPACE}") {
-                        sh 'docker-compose -f compose.yml build --no-cache'
-                        sh 'docker-compose -f compose.yml up -d'
-                    }
+                dir("${WORKSPACE_DIR}") {
+                    sh "docker-compose -f compose.yml build --no-cache"
+                    sh "docker-compose -f compose.yml up -d"
                 }
             }
         }
 
         stage('Verify DB tables') {
+            when {
+                expression { env.SQL_EXISTS == "true" }
+            }
             steps {
-                echo ">>> Checking if FriendDB tables exist"
-                sh 'docker exec -it frienddb psql -U postgres -d "FriendDB" -c "\\dt" || true'
+                echo ">>> Checking database tables..."
+                sh """
+                    docker exec -it frienddb psql -U postgres -d FriendDB -c "\\dt" || echo "No tables found"
+                """
             }
         }
     }
