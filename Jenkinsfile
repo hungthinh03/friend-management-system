@@ -2,90 +2,61 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_PROJECT = "friend-management-system"
-        SQL_FOLDER = "sql"
+        DOCKER_COMPOSE_FILE = 'compose.yml'
     }
 
     stages {
-        stage('Declarative: Checkout SCM') {
+        stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Clean Workspace') {
+        stage('Build Gradle') {
             steps {
-                cleanWs()
+                sh './gradlew clean build -x test'  // build jar
             }
         }
 
-        stage('Verify SQL folder') {
+        stage('Build Docker Images') {
+            steps {
+                sh "docker-compose -f ${DOCKER_COMPOSE_FILE} build"
+            }
+        }
+
+        stage('Up Containers') {
+            steps {
+                sh "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d"
+            }
+        }
+
+        stage('Health Check') {
             steps {
                 script {
-                    if (fileExists("${SQL_FOLDER}")) {
-                        echo ">>> Local SQL folder contents:"
-                        sh "ls -l ${SQL_FOLDER}"
-                    } else {
-                        echo ">>> SQL folder not found, skipping SQL cleanup"
-                    }
-                }
-            }
-        }
-
-        stage('Clean SQL mount') {
-            when {
-                expression { fileExists("${SQL_FOLDER}") }
-            }
-            steps {
-                sh "rm -rf /docker_sql_mount/* || true"
-            }
-        }
-
-        stage('Build Java app') {
-            steps {
-                dir("${WORKSPACE}") {
-                    script {
-                        if (!fileExists('gradlew')) {
-                            error "ERROR: gradlew not found! Commit gradlew to repository."
-                        }
-                        sh "chmod +x gradlew"
-                        sh "./gradlew clean build -x test"
-                    }
-                }
-            }
-        }
-
-        stage('Clean old containers and volumes') {
-            steps {
-                sh """
-                docker-compose -f docker-compose.yml down -v
-                docker rm -f \$(docker ps -a -q --filter name=${DOCKER_PROJECT}-* || true) || true
-                """
-            }
-        }
-
-        stage('Build and redeploy with Docker Compose') {
-            steps {
-                sh "docker-compose -f docker-compose.yml build"
-                sh "docker-compose -f docker-compose.yml up -d"
-            }
-        }
-
-        stage('Verify DB tables') {
-            steps {
-                script {
-                    sh "docker exec -it ${DOCKER_PROJECT}db psql -U postgres -d FriendDB -c '\\dt' || true"
+                    // Wait until DB is healthy
+                    sh """
+                    RETRIES=5
+                    until docker inspect --format='{{.State.Health.Status}}' frienddb | grep -q "healthy" || [ \$RETRIES -eq 0 ]; do
+                        echo "Waiting for DB..."
+                        sleep 5
+                        RETRIES=\$((RETRIES-1))
+                    done
+                    """
                 }
             }
         }
     }
 
     post {
-        always {
-            echo ">>> Pipeline finished"
+        success {
+            echo "Build and deployment succeeded!"
         }
         failure {
-            echo ">>> Pipeline failed, check logs"
+            echo "Build failed."
+        }
+        always {
+            // Optional: show running containers
+            sh "docker ps"
         }
     }
 }
