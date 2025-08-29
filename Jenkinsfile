@@ -25,6 +25,12 @@ pipeline {
             }
         }
 
+        stage('Build Gradle') {
+            steps {
+                sh './gradlew clean build -x test'  // build the JAR first
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 sh 'docker-compose -f compose.yml build'
