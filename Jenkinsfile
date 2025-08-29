@@ -14,7 +14,7 @@ pipeline {
 
         stage('Build Gradle') {
             steps {
-                sh 'chmod +x ./gradlew'          // make gradlew executable
+                sh 'chmod +x ./gradlew'
                 sh './gradlew clean build -x test'
             }
         }
@@ -22,6 +22,17 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 sh "docker-compose -f ${DOCKER_COMPOSE_FILE} build"
+            }
+        }
+
+        stage('Debug SQL Scripts') {
+            steps {
+                echo "Listing SQL scripts inside the DB container mount:"
+                sh """
+                    docker run --rm \\
+                        -v \$(pwd)/sql:/docker-entrypoint-initdb.d \\
+                        alpine ls -l /docker-entrypoint-initdb.d
+                """
             }
         }
 
