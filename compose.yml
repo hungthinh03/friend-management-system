@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: 12345678
       POSTGRES_DB: FriendDB
     volumes:
-      #- frienddb_data:/var/lib/postgresql/data       # persistent DB data //keep data if rerun container
+      - frienddb_data:/var/lib/postgresql/data       # persistent DB data //keep data if rerun container
       - ./sql:/docker-entrypoint-initdb.d           # init scripts
 
       #- type: volume
