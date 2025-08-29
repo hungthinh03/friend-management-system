@@ -23,10 +23,11 @@ pipeline {
 
         stage('Prepare SQL Scripts') {
             steps {
+                // Just check that the SQL file exists; no moving or renaming needed
                 sh '''
-                # Ensure frienddb.sql is a file, not a folder
-                if [ -d ./sql/frienddb.sql ]; then
-                    rm -rf ./sql/frienddb.sql
+                if [ ! -f ./sql/frienddb.sql ]; then
+                    echo "ERROR: SQL file not found!"
+                    exit 1
                 fi
                 '''
             }
