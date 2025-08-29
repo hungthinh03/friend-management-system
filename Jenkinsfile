@@ -15,16 +15,17 @@ pipeline {
 
         stage('Verify SQL folder') {
             steps {
+                echo '>>> Local SQL folder contents:'
                 sh "ls -l ${env.WORKSPACE}/sql"
+                sh "file ${env.WORKSPACE}/sql/* || true"   // show file types
             }
         }
 
         stage('Build Java app') {
             steps {
                 dir(env.WORKSPACE) {
-                    // Make gradlew executable in case Jenkins checkout lost permissions
                     sh "chmod +x gradlew"
-                    sh "./gradlew clean build -x test"   // build app jar
+                    sh "./gradlew clean build -x test"
                 }
             }
         }
@@ -54,8 +55,9 @@ pipeline {
                 script {
                     dir(env.WORKSPACE) {
                         withEnv(["COMPOSE_PROJECT_NAME=${DOCKER_PROJECT}"]) {
-                            echo '>>> Checking contents of /docker-entrypoint-initdb.d inside db container...'
+                            echo '>>> Checking contents of /docker-entrypoint-initdb.d inside db container:'
                             sh "docker-compose -f compose.yml run --rm db ls -l /docker-entrypoint-initdb.d/"
+                            sh "docker-compose -f compose.yml run --rm db file /docker-entrypoint-initdb.d/* || true"
                         }
                     }
                 }
