@@ -22,6 +22,8 @@ pipeline {
         stage('Build Java app') {
             steps {
                 dir(env.WORKSPACE) {
+                    // Make gradlew executable in case Jenkins checkout lost permissions
+                    sh "chmod +x gradlew"
                     sh "./gradlew clean build -x test"   // build app jar
                 }
             }
