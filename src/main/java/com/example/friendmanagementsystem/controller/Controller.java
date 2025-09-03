@@ -1,9 +1,6 @@
 package com.example.friendmanagementsystem.controller;
 
-import com.example.friendmanagementsystem.dto.AccountDTO;
-import com.example.friendmanagementsystem.dto.ApiResponseDTO;
-import com.example.friendmanagementsystem.dto.PostDTO;
-import com.example.friendmanagementsystem.dto.UserConnectionDTO;
+import com.example.friendmanagementsystem.dto.*;
 import com.example.friendmanagementsystem.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -40,13 +37,13 @@ public class Controller {
 
     // Get friend list
     @PostMapping("/friends")
-    public Mono<ApiResponseDTO> getFriends(@RequestBody AccountDTO dto) {
+    public Mono<FriendsResponseDTO> getFriends(@RequestBody AccountDTO dto) {
         return service.getFriends(dto);
     }
 
     // Get common friends
     @PostMapping("/friend/mutual")
-    public Mono<ApiResponseDTO> getMutualFriends(@RequestBody AccountDTO dto) {
+    public Mono<FriendsResponseDTO> getMutualFriends(@RequestBody AccountDTO dto) {
         return service.getCommonFriends(dto);
     }
 
@@ -72,7 +69,7 @@ public class Controller {
 
     // Post
     @PostMapping("/post")
-    public Mono<ApiResponseDTO> getUpdateRecipients(@RequestBody PostDTO dto) {
+    public Mono<RecipientsResponseDTO> getUpdateRecipients(@RequestBody PostDTO dto) {
         return service.getUpdateRecipients(dto);
     }
 

@@ -1,10 +1,7 @@
 package com.example.friendmanagementsystem.controller;
 
 import com.example.friendmanagementsystem.common.enums.ErrorCode;
-import com.example.friendmanagementsystem.dto.AccountDTO;
-import com.example.friendmanagementsystem.dto.ApiResponseDTO;
-import com.example.friendmanagementsystem.dto.PostDTO;
-import com.example.friendmanagementsystem.dto.UserConnectionDTO;
+import com.example.friendmanagementsystem.dto.*;
 import com.example.friendmanagementsystem.service.AccountService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -203,7 +200,7 @@ class AccountControllerTest {
         AccountDTO dto = new AccountDTO();
         dto.setEmail("andy@example.com");
 
-        ApiResponseDTO response = new ApiResponseDTO(true, List.of("john@example.com"), 1);
+        FriendsResponseDTO response = new FriendsResponseDTO(true, List.of("john@example.com"), 1);
 
         when(accountService.getFriends(any(AccountDTO.class)))
                 .thenReturn(Mono.just(response));
@@ -225,7 +222,7 @@ class AccountControllerTest {
         dto.setEmail("andy@example.com");
 
         when(accountService.getFriends(any(AccountDTO.class)))
-                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+                .thenReturn(Mono.just(new FriendsResponseDTO(ErrorCode.USER_NOT_FOUND)));
 
         webTestClient.post()
                 .uri("/account/friends")
@@ -247,7 +244,7 @@ class AccountControllerTest {
 
         // Mock service response
         when(accountService.getCommonFriends(any(AccountDTO.class)))
-                .thenReturn(Mono.just(new ApiResponseDTO(true, List.of("common@example.com"), 1)));
+                .thenReturn(Mono.just(new FriendsResponseDTO(true, List.of("common@example.com"), 1)));
 
         webTestClient.post()
                 .uri("/account/friend/mutual")
@@ -266,7 +263,7 @@ class AccountControllerTest {
         dto.setFriends(List.of("onlyone@example.com"));
 
         when(accountService.getCommonFriends(any(AccountDTO.class)))
-                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.INVALID_REQUEST)));
+                .thenReturn(Mono.just(new FriendsResponseDTO(ErrorCode.INVALID_REQUEST)));
 
         webTestClient.post()
                 .uri("/account/friend/mutual")
@@ -285,7 +282,7 @@ class AccountControllerTest {
         dto.setFriends(List.of("andy@example.com", "john@example.com"));
 
         when(accountService.getCommonFriends(any(AccountDTO.class)))
-                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+                .thenReturn(Mono.just(new FriendsResponseDTO(ErrorCode.USER_NOT_FOUND)));
 
         webTestClient.post()
                 .uri("/account/friend/mutual")
@@ -304,7 +301,7 @@ class AccountControllerTest {
         dto.setFriends(List.of("andy@example.com", "andy@example.com"));
 
         when(accountService.getCommonFriends(any(AccountDTO.class)))
-                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.SAME_EMAILS)));
+                .thenReturn(Mono.just(new FriendsResponseDTO(ErrorCode.SAME_EMAILS)));
 
         webTestClient.post()
                 .uri("/account/friend/mutual")
@@ -554,7 +551,7 @@ class AccountControllerTest {
         PostDTO dto = new PostDTO("john@example.com", "Hello! kate@example.com");
 
         when(accountService.getUpdateRecipients(any(PostDTO.class)))
-                .thenReturn(Mono.just(new ApiResponseDTO(true, List.of("lisa@example.com", "kate@example.com"))));
+                .thenReturn(Mono.just(new RecipientsResponseDTO(true, List.of("lisa@example.com", "kate@example.com"))));
 
         webTestClient.post()
                 .uri("/account/post")
@@ -572,7 +569,7 @@ class AccountControllerTest {
         PostDTO dto = new PostDTO("ghost@example.com", "Hello! kate@example.com");
 
         when(accountService.getUpdateRecipients(any(PostDTO.class)))
-                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.USER_NOT_FOUND)));
+                .thenReturn(Mono.just(new RecipientsResponseDTO(ErrorCode.USER_NOT_FOUND)));
 
         webTestClient.post()
                 .uri("/account/post")
@@ -590,7 +587,7 @@ class AccountControllerTest {
         PostDTO dto = new PostDTO("john@example.com", "");
 
         when(accountService.getUpdateRecipients(any(PostDTO.class)))
-                .thenReturn(Mono.just(new ApiResponseDTO(ErrorCode.INVALID_REQUEST)));
+                .thenReturn(Mono.just(new RecipientsResponseDTO(ErrorCode.INVALID_REQUEST)));
 
         webTestClient.post()
                 .uri("/account/post")

@@ -122,7 +122,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Mono<ApiResponseDTO> getFriends(AccountDTO dto) {
+    public Mono<FriendsResponseDTO> getFriends(AccountDTO dto) {
         return accountRepo.findByEmail(dto.getEmail())
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
                 .flatMap(account ->
@@ -130,20 +130,20 @@ public class AccountServiceImpl implements AccountService {
                                 .collectList() // Mono<List<Integer>>
                                 .flatMap(friendIds -> {
                                     if (friendIds.isEmpty()) {
-                                        return Mono.just((ApiResponseDTO) new FriendsResponseDTO(true, List.of(), 0));
+                                        return Mono.just(new FriendsResponseDTO(true, List.of(), 0));
                                     }
                                     return accountRepo.findAllById(friendIds) // fetch all accounts at once
                                             .map(Account::getEmail)
                                             .collectList()
                                             .map(friendsList ->
-                                                    (ApiResponseDTO) new FriendsResponseDTO(true, friendsList, friendsList.size()));
+                                                    new FriendsResponseDTO(true, friendsList, friendsList.size()));
                                 })
                 )
-                .onErrorResume(AppException.class, e -> Mono.just((ApiResponseDTO) new FriendsResponseDTO(e.getErrorCode())));
+                .onErrorResume(AppException.class, e -> Mono.just(new FriendsResponseDTO(e.getErrorCode())));
     }
 
     @Override
-    public Mono<ApiResponseDTO> getCommonFriends(AccountDTO dto) {
+    public Mono<FriendsResponseDTO> getCommonFriends(AccountDTO dto) {
         return Mono.justOrEmpty(dto.getFriends())
                 .filter(list -> list.size() == 2)
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
@@ -155,13 +155,13 @@ public class AccountServiceImpl implements AccountService {
                 .flatMap(pair -> { // return sets of friends: Set.of(id2, id3, id4)
                     pair.getT1().retainAll(pair.getT2()); // pair.getT1() = Retain only ids in set pair.getT2()
                     return pair.getT1().isEmpty()
-                            ? Mono.just((ApiResponseDTO) new FriendsResponseDTO(true, List.of(), 0))
+                            ? Mono.just(new FriendsResponseDTO(true, List.of(), 0))
                             : accountRepo.findAllById(pair.getT1())
                             .map(Account::getEmail)
                             .collectList()
-                            .map(list -> (ApiResponseDTO) new FriendsResponseDTO(true, list, list.size()));
+                            .map(list -> new FriendsResponseDTO(true, list, list.size()));
                 })
-                .onErrorResume(AppException.class, e -> Mono.just((ApiResponseDTO) new FriendsResponseDTO(e.getErrorCode())));
+                .onErrorResume(AppException.class, e -> Mono.just(new FriendsResponseDTO(e.getErrorCode())));
     }
 
 
@@ -260,7 +260,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Mono<ApiResponseDTO> getUpdateRecipients(PostDTO dto) {
+    public Mono<RecipientsResponseDTO> getUpdateRecipients(PostDTO dto) {
         return Mono.just(dto)
                 .filter(d -> Objects.nonNull(d.getText()) && !d.getText().isBlank())
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))

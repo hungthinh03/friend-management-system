@@ -16,29 +16,15 @@ public class ApiResponseDTO {
     private ErrorCode error;
     private String message;
     private Integer statusCode;
-    private List<String> friends;
-    private List<String> recipients;
-    private Integer count;
 
-
-    public ApiResponseDTO(boolean success) {
+    public ApiResponseDTO(boolean success) { //standard success
         this.success = success;
     }
 
-    public ApiResponseDTO(ErrorCode errorCode) {
+    public ApiResponseDTO(ErrorCode errorCode) { //error
         this.status = "error";
         this.message = errorCode.getMessage();
         this.statusCode = errorCode.getCode();
     }
 
-    public ApiResponseDTO(boolean success, List<String> friends, Integer count) {
-        this.success = success;
-        this.friends = friends;
-        this.count = count;
-    }
-
-    public ApiResponseDTO(boolean success, List<String> recipients) {
-        this.success = success;
-        this.recipients = recipients;
-    }
 }
