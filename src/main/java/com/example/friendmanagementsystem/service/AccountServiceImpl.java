@@ -2,10 +2,7 @@ package com.example.friendmanagementsystem.service;
 
 import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import com.example.friendmanagementsystem.common.exception.AppException;
-import com.example.friendmanagementsystem.dto.AccountDTO;
-import com.example.friendmanagementsystem.dto.ApiResponseDTO;
-import com.example.friendmanagementsystem.dto.PostDTO;
-import com.example.friendmanagementsystem.dto.UserConnectionDTO;
+import com.example.friendmanagementsystem.dto.*;
 import com.example.friendmanagementsystem.model.Account;
 import com.example.friendmanagementsystem.model.Block;
 import com.example.friendmanagementsystem.model.Follower;
@@ -133,16 +130,16 @@ public class AccountServiceImpl implements AccountService {
                                 .collectList() // Mono<List<Integer>>
                                 .flatMap(friendIds -> {
                                     if (friendIds.isEmpty()) {
-                                        return Mono.just(new ApiResponseDTO(true, List.of(), 0));
+                                        return Mono.just((ApiResponseDTO) new FriendsResponseDTO(true, List.of(), 0));
                                     }
                                     return accountRepo.findAllById(friendIds) // fetch all accounts at once
                                             .map(Account::getEmail)
                                             .collectList()
                                             .map(friendsList ->
-                                                    new ApiResponseDTO(true, friendsList, friendsList.size()));
+                                                    (ApiResponseDTO) new FriendsResponseDTO(true, friendsList, friendsList.size()));
                                 })
                 )
-                .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
+                .onErrorResume(AppException.class, e -> Mono.just((ApiResponseDTO) new FriendsResponseDTO(e.getErrorCode())));
     }
 
     @Override
@@ -158,13 +155,13 @@ public class AccountServiceImpl implements AccountService {
                 .flatMap(pair -> { // return sets of friends: Set.of(id2, id3, id4)
                     pair.getT1().retainAll(pair.getT2()); // pair.getT1() = Retain only ids in set pair.getT2()
                     return pair.getT1().isEmpty()
-                            ? Mono.just(new ApiResponseDTO(true, List.of(), 0))
+                            ? Mono.just((ApiResponseDTO) new FriendsResponseDTO(true, List.of(), 0))
                             : accountRepo.findAllById(pair.getT1())
                             .map(Account::getEmail)
                             .collectList()
-                            .map(list -> new ApiResponseDTO(true, list, list.size()));
+                            .map(list -> (ApiResponseDTO) new FriendsResponseDTO(true, list, list.size()));
                 })
-                .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
+                .onErrorResume(AppException.class, e -> Mono.just((ApiResponseDTO) new FriendsResponseDTO(e.getErrorCode())));
     }
 
 
@@ -265,7 +262,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public Mono<ApiResponseDTO> getUpdateRecipients(PostDTO dto) {
         return Mono.just(dto)
-                .filter(d -> d.getText() != null && !d.getText().isBlank())
+                .filter(d -> Objects.nonNull(d.getText()) && !d.getText().isBlank())
                 .switchIfEmpty(Mono.error(new AppException(ErrorCode.INVALID_REQUEST)))
                 .flatMap(validDto -> accountRepo.findByEmail(validDto.getSender())
                         .switchIfEmpty(Mono.error(new AppException(ErrorCode.USER_NOT_FOUND)))
@@ -283,7 +280,7 @@ public class AccountServiceImpl implements AccountService {
                                     .filter(acc -> !acc.getEmail().equalsIgnoreCase(senderEmail))
                                     .map(Account::getEmail)
                                     .collectList()
-                                    .map(recipients -> new ApiResponseDTO(true, recipients));
+                                    .map(recipients -> (ApiResponseDTO) new RecipientsResponseDTO(true, recipients));
                         }))
                 .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
     }

@@ -62,7 +62,7 @@ class AccountServiceTest {
 
     @Test
     void addFriend_userNotFound() {
-        var dto = new AccountDTO();
+        AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("andy@example.com", "john@example.com"));
 
         when(accountRepo.findByEmail(anyString())).thenReturn(Mono.empty()); //return empty
@@ -75,7 +75,7 @@ class AccountServiceTest {
 
     @Test
     void addFriend_invalidRequest() { // Invalid request (not 2 emails)
-        var dto = new AccountDTO();
+        AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("onlyone@example.com")); // only 1 email
 
         StepVerifier.create(accountService.addFriend(dto))
@@ -86,7 +86,7 @@ class AccountServiceTest {
 
     @Test
     void addFriend_sameEmails() { // Same emails
-        var dto = new AccountDTO();
+        AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("andy@example.com", "andy@example.com"));
 
         StepVerifier.create(accountService.addFriend(dto))
@@ -97,9 +97,9 @@ class AccountServiceTest {
 
     @Test
     void addFriend_alreadyFriends() { //Already friends
-        var acc1 = new Account(1, "a@example.com");
-        var acc2 = new Account(2, "b@example.com"); //var
-        var dto = new AccountDTO();
+        Account acc1 = new Account(1, "a@example.com");
+        Account acc2 = new Account(2, "b@example.com");
+        AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of(acc1.getEmail(), acc2.getEmail()));
 
         when(accountRepo.findByEmail(acc1.getEmail())).thenReturn(Mono.just(acc1));
@@ -116,7 +116,7 @@ class AccountServiceTest {
     @Test
     void addFriend_blockedUsers() {
         Account acc1 = new Account(1, "a@example.com");
-        Account acc2 = new Account(2, "b@example.com"); //No var
+        Account acc2 = new Account(2, "b@example.com");
         AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of(acc1.getEmail(), acc2.getEmail()));
 
@@ -263,7 +263,7 @@ class AccountServiceTest {
 
     @Test
     void getCommonFriends_sameEmails() {
-        var dto = new AccountDTO();
+        AccountDTO dto = new AccountDTO();
         dto.setFriends(List.of("andy@example.com", "andy@example.com"));
 
         StepVerifier.create(accountService.getCommonFriends(dto))
@@ -277,7 +277,7 @@ class AccountServiceTest {
     void subscribeUpdates_success() {
         Account lisa = new Account(1, "lisa@example.com");
         Account john = new Account(2, "john@example.com");
-        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+        UserConnectionDTO dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
 
         when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
         when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
@@ -294,7 +294,7 @@ class AccountServiceTest {
     @Test
     void subscribeUpdates_userNotFound() {
         Account lisa = new Account(1, "lisa@example.com");
-        var dto = new UserConnectionDTO(lisa.getEmail(), "unknown@example.com");
+        UserConnectionDTO dto = new UserConnectionDTO(lisa.getEmail(), "unknown@example.com");
 
         when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
         when(accountRepo.findByEmail("unknown@example.com")).thenReturn(Mono.empty());
@@ -308,7 +308,7 @@ class AccountServiceTest {
     @Test
     void subscribeUpdates_sameEmails() {
         Account lisa = new Account(1, "lisa@example.com");
-        var dto = new UserConnectionDTO(lisa.getEmail(), lisa.getEmail());
+        UserConnectionDTO dto = new UserConnectionDTO(lisa.getEmail(), lisa.getEmail());
 
         StepVerifier.create(accountService.subscribeUpdates(dto))
                 .expectNextMatches(resp -> resp.getStatusCode() == 1009 &&
@@ -320,7 +320,7 @@ class AccountServiceTest {
     void subscribeUpdates_blocked() {
         Account lisa = new Account(1, "lisa@example.com");
         Account john = new Account(2, "john@example.com");
-        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+        UserConnectionDTO dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
 
         when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
         when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
@@ -337,7 +337,7 @@ class AccountServiceTest {
     void subscribeUpdates_alreadyFollowed() {
         Account lisa = new Account(1, "lisa@example.com");
         Account john = new Account(2, "john@example.com");
-        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+        UserConnectionDTO dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
 
         when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
         when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
@@ -354,7 +354,7 @@ class AccountServiceTest {
     void unsubscribeUpdates_success() {
         Account lisa = new Account(1, "lisa@example.com");
         Account john = new Account(2, "john@example.com");
-        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+        UserConnectionDTO dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
 
         when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
         when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
@@ -374,7 +374,7 @@ class AccountServiceTest {
     void unsubscribeUpdates_notFollowed() {
         Account lisa = new Account(1, "lisa@example.com");
         Account john = new Account(2, "john@example.com");
-        var dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
+        UserConnectionDTO dto = new UserConnectionDTO(lisa.getEmail(), john.getEmail());
 
         when(accountRepo.findByEmail(lisa.getEmail())).thenReturn(Mono.just(lisa));
         when(accountRepo.findByEmail(john.getEmail())).thenReturn(Mono.just(john));
