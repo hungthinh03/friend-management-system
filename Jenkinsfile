@@ -40,7 +40,7 @@ pipeline {
                 sh 'docker-compose -f deploy/compose.yml down -v'
 
                 // Remove any leftover anonymous or old volumes safely
-                sh 'docker volume rm -f friend-management-system_frienddb_data || true'
+                sh 'docker volume rm -f deploy_frienddb_data || true'
             }
         }
 
