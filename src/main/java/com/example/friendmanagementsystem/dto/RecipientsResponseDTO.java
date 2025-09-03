@@ -2,10 +2,12 @@ package com.example.friendmanagementsystem.dto;
 
 import com.example.friendmanagementsystem.common.enums.ErrorCode;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class RecipientsResponseDTO extends ApiResponseDTO{
     private List<String> recipients;
 
