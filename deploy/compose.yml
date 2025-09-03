@@ -20,7 +20,9 @@ services:
       retries: 5
 
   app:
-    build: ..
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
     container_name: friend-app
     depends_on:
       db:
