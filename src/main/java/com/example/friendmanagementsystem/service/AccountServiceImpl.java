@@ -280,7 +280,7 @@ public class AccountServiceImpl implements AccountService {
                                     .filter(acc -> !acc.getEmail().equalsIgnoreCase(senderEmail))
                                     .map(Account::getEmail)
                                     .collectList()
-                                    .map(recipients -> (ApiResponseDTO) new RecipientsResponseDTO(true, recipients));
+                                    .map(recipients -> new RecipientsResponseDTO(true, recipients));
                         }))
                 .onErrorResume(AppException.class, e -> Mono.just(new RecipientsResponseDTO(e.getErrorCode())));
     }
