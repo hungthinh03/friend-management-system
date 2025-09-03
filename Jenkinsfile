@@ -30,14 +30,14 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                sh 'docker-compose -f compose.yml build'
+                sh 'docker-compose -f deploy/compose.yml build'
             }
         }
 
         stage('Recreate DB') {
             steps {
                 // Stop and remove containers along with named volumes
-                sh 'docker-compose -f compose.yml down -v'
+                sh 'docker-compose -f deploy/compose.yml down -v'
 
                 // Remove any leftover anonymous or old volumes safely
                 sh 'docker volume rm -f friend-management-system_frienddb_data || true'
@@ -46,7 +46,7 @@ pipeline {
 
         stage('Up Containers') {
             steps {
-                sh 'docker-compose -f compose.yml up -d'
+                sh 'docker-compose -f deploy/compose.yml up -d'
             }
         }
 
