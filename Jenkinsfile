@@ -50,6 +50,12 @@ pipeline {
             }
         }
 
+        stage('Debug SQL Mount') {
+            steps {
+                sh 'docker exec frienddb ls -l /docker-entrypoint-initdb.d'
+            }
+        }
+
         stage('Health Check') {
             steps {
                 sh 'docker ps'
