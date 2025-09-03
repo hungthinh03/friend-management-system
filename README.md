@@ -350,11 +350,16 @@ SQL Script to recreate the database: [schema.sql](./sql/frienddb.sql)
 Run the following command in the project root to start both the application and database:
 
 ```bash
-docker compose up
+docker compose -f deploy/compose.yml up
 ```
 This will start:
-- **friendapp** - Spring Boot application on port 8080
+- **friendapp** - Spring Boot application on port 8081
 - **frienddb** - PostgreSQL database on port 5432
+
+To stop the containers and remove associated volumes:
+```bash
+docker compose -f deploy/compose.yml down -v
+```
 
 2. **API Testing**
 
