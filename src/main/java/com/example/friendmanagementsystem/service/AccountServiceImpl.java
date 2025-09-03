@@ -282,7 +282,7 @@ public class AccountServiceImpl implements AccountService {
                                     .collectList()
                                     .map(recipients -> (ApiResponseDTO) new RecipientsResponseDTO(true, recipients));
                         }))
-                .onErrorResume(AppException.class, e -> Mono.just(new ApiResponseDTO(e.getErrorCode())));
+                .onErrorResume(AppException.class, e -> Mono.just(new RecipientsResponseDTO(e.getErrorCode())));
     }
 }
 
