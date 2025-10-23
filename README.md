@@ -353,7 +353,7 @@ Run the following command in the project root to build the Spring Boot JAR file 
 ./gradlew build
 ```
 
-> Use -x test to skip running tests for faster image build
+> Use `-x` test to skip running tests for faster image build
 
 2. **Start the Application**
 
