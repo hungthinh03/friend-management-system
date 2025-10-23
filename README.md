@@ -345,7 +345,17 @@ SQL Script to recreate the database: [schema.sql](./sql/frienddb.sql)
 
 ## 5. Setup & Testing
 
-1. **Start the Application**
+1. **Build the Application**
+
+Run the following command in the project root to build the Spring Boot JAR file used by the Docker image:
+
+```bash
+./gradlew build
+```
+
+> Use -x test to skip running tests for faster image build
+
+2. **Start the Application**
 
 Run the following command in the project root to start both the application and database:
 
@@ -361,7 +371,7 @@ To stop the containers and remove associated volumes:
 docker compose -f deploy/compose.yml down -v
 ```
 
-2. **API Testing**
+3. **API Testing**
 
 Use the included Postman collection to test the API endpoints with the predefined requests. Postman collection: [FriendManagementAPI.postman_collection.json](./postman/FriendManagementAPI.postman_collection.json)
 
